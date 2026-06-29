@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>점수입력 · 마작 점수판</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 입력</p>
+      <h1>점수입력</h1>
+      <p>좌석마다 아이디와 점수를 넣어주세요. 아이디는 직접 입력하거나 목록에서 고를 수 있습니다.</p>
+    </header>
+
+    <section class="card">
+      <div class="col-head">
+        <span>위치</span>
+        <span>아이디</span>
+        <span style="text-align:right">점수</span>
+      </div>
+      <div id="rows">
+        <div class="empty">불러오는 중…</div>
+      </div>
+    </section>
+
+    <!-- 아이디 후보 목록 (직접 입력 + 드롭다운 겸용) -->
+    <datalist id="player-list"></datalist>
+
+    <p class="note">
+      아이디 목록은 관리자가 관리합니다(Firestore의 <code>config/players</code>).
+      다음 단계에서 관리자 페이지로 추가·삭제할 수 있게 만들 예정입니다.
+    </p>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="save">저장하기</button>
+      <a class="btn btn-ghost" href="index.html">돌아가기</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { SEATS, getScoresOnce, getPlayersOnce, saveScores } from './store.js';
+
+    const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
+    const rowsEl = document.getElementById('rows');
+    const saveBtn = document.getElementById('save');
+
+    function fillDatalist(players) {
+      document.getElementById('player-list').innerHTML =
+        players.map(name => `<option value="${name}"></option>`).join('');
+    }
+
+    function buildRows(prev) {
+      rowsEl.innerHTML = SEATS.map((seat, i) => {
+        const p = prev[i] || { id: '', score: null };
+        const cls = SEAT_CLS[seat.pos];
+        const scoreVal = (p.score === null || p.score === '') ? '' : p.score;
+        return `
+          <div class="form-row">
+            <span class="seat-badge seat-${cls}">
+              <span class="han">${seat.hanja}</span>${seat.pos}
+            </span>
+            <input type="text" list="player-list" placeholder="아이디 입력 또는 선택"
+                   data-role="id" value="${p.id || ''}" />
+            <input type="number" placeholder="점수" inputmode="numeric"
+                   data-role="score" value="${scoreVal}" />
+          </div>`;
+      }).join('');
+    }
+
+    async function save() {
+      const idInputs = [...document.querySelectorAll('[data-role="id"]')];
+      const scoreInputs = [...document.querySelectorAll('[data-role="score"]')];
+
+      const result = SEATS.map((seat, i) => ({
+        pos: seat.pos,
+        id: idInputs[i].value.trim(),
+        score: scoreInputs[i].value === '' ? null : Number(scoreInputs[i].value),
+      }));
+
+      if (!result.some(r => r.score !== null)) {
+        alert('점수를 한 명 이상 입력해 주세요.');
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = '저장 중…';
+      try {
+        await saveScores(result);
+        window.location.href = 'index.html';
+      } catch (e) {
+        console.error(e);
+        alert('저장에 실패했습니다. Firebase 설정/규칙을 확인해 주세요.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = '저장하기';
+      }
+    }
+
+    // 초기화: 아이디 목록 + 이전 점수 불러오기
+    (async () => {
+      try {
+        const [players, prev] = await Promise.all([getPlayersOnce(), getScoresOnce()]);
+        fillDatalist(players);
+        buildRows(prev);
+      } catch (e) {
+        console.error(e);
+        rowsEl.innerHTML = '<div class="empty">불러오기에 실패했습니다. Firebase 설정을 확인해 주세요.</div>';
+      }
+      saveBtn.addEventListener('click', save);
+    })();
+  </script>
+</body>
+</html>
