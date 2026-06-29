@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>지난대회기록 · 관리자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 관리자</p>
+      <h1>지난대회기록</h1>
+      <p>대회를 누르면 순위표가 열립니다. E: 이름/기록 수정, D: 대회 삭제.</p>
+    </header>
+
+    <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
+    <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
+  </main>
+
+  <script type="module">
+    import { onTournaments, getGamesByTournament, computeStandings,
+             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js';
+    if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+
+    const list = document.getElementById('list');
+    let tournaments = [];
+    const openStand = new Set();   // 순위표 펼친 대회
+    const openEdit = new Set();    // 이름수정 펼친 대회
+    const standCache = {};         // tid -> standings
+
+    function standTable(s) {
+      if (!s || s.length === 0) return `<div class="empty">기록 없음</div>`;
+      const body = s.map(e => `<tr>
+        <td><span class="rank r${e.rank<=3?e.rank:''}">${e.rank}</span></td>
+        <td>${e.id}</td><td class="num">${e.total.toLocaleString('ko-KR')}</td><td class="num">${e.count}</td></tr>`).join('');
+      return `<table class="mini"><thead><tr><th style="width:44px">순위</th><th>아이디</th><th class="num">총점</th><th class="num">국수</th></tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function render() {
+      if (tournaments.length === 0) { list.innerHTML = `<div class="card"><div class="empty"><strong>대회가 없어요</strong>‘대회생성’에서 먼저 만드세요.</div></div>`; return; }
+      list.innerHTML = tournaments.map(t => {
+        const standHtml = openStand.has(t.id)
+          ? `<div style="margin-top:8px;">${standCache[t.id] ? standTable(standCache[t.id]) : '<div class="empty">불러오는 중…</div>'}</div>` : '';
+        const editHtml = openEdit.has(t.id)
+          ? `<div class="edit-row" style="grid-template-columns:1fr 80px;margin-top:8px;">
+               <input type="text" data-name="${t.id}" value="${t.name}" />
+               <button class="btn btn-primary" data-act="savename" data-id="${t.id}" style="padding:8px 10px;">저장</button>
+             </div>
+             <div style="padding:6px 8px;"><a class="btn btn-ghost" href="admin-edit.html?t=${t.id}" style="padding:8px 14px;">이 대회 기록수정 →</a></div>` : '';
+        return `<div class="record-card">
+          <div class="record-head">
+            <span class="game-no" style="cursor:pointer;" data-act="toggle" data-id="${t.id}">${t.name}</span>
+            <span class="ed">
+              <button data-act="edit" data-id="${t.id}" title="이름/기록 수정">E</button>
+              <button class="del" data-act="del" data-id="${t.id}" title="대회 삭제">D</button></span>
+          </div>
+          <div class="meta-line">${t.startDate} ~ ${t.endDate} · ${ruleLabel(t)} · 정원 ${capacityLabel(t.capacity)}</div>
+          ${editHtml}${standHtml}
+        </div>`;
+      }).join('');
+      bind();
+    }
+
+    function bind() {
+      list.querySelectorAll('[data-act]').forEach(el => el.addEventListener('click', () => handle(el.dataset.act, el.dataset.id)));
+    }
+
+    async function handle(act, id) {
+      if (act === 'toggle') {
+        if (openStand.has(id)) openStand.delete(id);
+        else { openStand.add(id); if (!standCache[id]) { render(); standCache[id] = computeStandings(await getGamesByTournament(id)); } }
+        render(); return;
+      }
+      if (act === 'edit') { openEdit.has(id) ? openEdit.delete(id) : openEdit.add(id); render(); return; }
+      if (act === 'savename') {
+        const v = list.querySelector(`[data-name="${id}"]`).value.trim();
+        if (!v) { alert('대회명을 입력하세요.'); return; }
+        try { await updateTournament(id, { name: v }); openEdit.delete(id); } catch(e){ console.error(e); alert('저장 실패.'); }
+        return; // onTournaments가 갱신을 트리거함
+      }
+      if (act === 'del') {
+        const t = tournaments.find(x => x.id === id);
+        if (!confirm(`‘${t.name}’ 대회와 그 모든 경기 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+        try { await deleteTournament(id); } catch(e){ console.error(e); alert('삭제 실패.'); }
+      }
+    }
+
+    onTournaments(list2 => { tournaments = list2; render(); });
+  </script>
+</body>
+</html>

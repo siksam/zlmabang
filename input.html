@@ -14,27 +14,17 @@
   <main class="wrap">
     <header class="topbar">
       <p class="eyebrow">東南西北 · 입력</p>
-      <h1>점수입력</h1>
-      <p>한 경기의 결과를 넣어주세요. 저장하면 기존 기록에 새 경기로 추가됩니다.</p>
+      <h1 id="title">점수입력</h1>
+      <p id="subtitle">진행 대회를 불러오는 중…</p>
     </header>
 
     <section class="card">
-      <div class="col-head">
-        <span>위치</span>
-        <span>아이디</span>
-        <span style="text-align:right">점수</span>
-      </div>
-      <div id="rows">
-        <div class="empty">불러오는 중…</div>
-      </div>
+      <div class="col-head"><span>위치</span><span>아이디</span><span style="text-align:right">점수</span></div>
+      <div id="rows"><div class="empty">불러오는 중…</div></div>
     </section>
 
     <datalist id="player-list"></datalist>
-
-    <p class="note">
-      아이디 목록은 관리자가 관리합니다(Firestore의 <code>config/players</code>).
-      칸에 직접 입력하거나 목록에서 골라도 됩니다.
-    </p>
+    <p class="note">아이디는 칸에 직접 입력하거나 목록(인원관리에서 등록된 참가자)에서 고를 수 있습니다.</p>
 
     <div class="actions">
       <button class="btn btn-primary" id="save">저장하기</button>
@@ -43,68 +33,51 @@
   </main>
 
   <script type="module">
-    import { SEATS, emptyRows, getPlayersOnce, addGame } from './store.js';
+    import { SEATS, getActiveTournamentId, getTournament, addGame } from './store.js';
 
     const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
     const rowsEl = document.getElementById('rows');
     const saveBtn = document.getElementById('save');
+    let activeId = null;
 
-    function fillDatalist(players) {
+    function fillDatalist(participants) {
       document.getElementById('player-list').innerHTML =
-        players.map(name => `<option value="${name}"></option>`).join('');
+        (participants || []).map(p => `<option value="${p.id}"></option>`).join('');
     }
-
     function buildRows() {
-      const blank = emptyRows();
-      rowsEl.innerHTML = SEATS.map((seat, i) => {
-        const cls = SEAT_CLS[seat.pos];
-        return `
-          <div class="form-row">
-            <span class="seat-badge seat-${cls}">
-              <span class="han">${seat.hanja}</span>${seat.pos}
-            </span>
-            <input type="text" list="player-list" placeholder="아이디 입력 또는 선택"
-                   data-role="id" value="" />
-            <input type="number" placeholder="점수" inputmode="numeric"
-                   data-role="score" value="" />
-          </div>`;
-      }).join('');
+      rowsEl.innerHTML = SEATS.map(seat => `
+        <div class="form-row">
+          <span class="seat-badge seat-${SEAT_CLS[seat.pos]}"><span class="han">${seat.hanja}</span>${seat.pos}</span>
+          <input type="text" list="player-list" placeholder="아이디 입력 또는 선택" data-role="id" />
+          <input type="number" placeholder="점수" inputmode="numeric" data-role="score" />
+        </div>`).join('');
     }
-
     async function save() {
-      const idInputs = [...document.querySelectorAll('[data-role="id"]')];
-      const scoreInputs = [...document.querySelectorAll('[data-role="score"]')];
-
+      if (!activeId) { alert('진행 중인 대회가 없습니다.'); return; }
+      const ids = [...document.querySelectorAll('[data-role="id"]')];
+      const scores = [...document.querySelectorAll('[data-role="score"]')];
       const result = SEATS.map((seat, i) => ({
-        pos: seat.pos,
-        id: idInputs[i].value.trim(),
-        score: scoreInputs[i].value === '' ? null : Number(scoreInputs[i].value),
+        pos: seat.pos, id: ids[i].value.trim(),
+        score: scores[i].value === '' ? null : Number(scores[i].value),
       }));
-
-      if (!result.some(r => r.score !== null)) {
-        alert('점수를 한 명 이상 입력해 주세요.');
-        return;
-      }
-
-      saveBtn.disabled = true;
-      saveBtn.textContent = '저장 중…';
-      try {
-        await addGame(result);
-        window.location.href = 'index.html';
-      } catch (e) {
-        console.error(e);
-        alert('저장에 실패했습니다. Firebase 설정/규칙을 확인해 주세요.');
-        saveBtn.disabled = false;
-        saveBtn.textContent = '저장하기';
-      }
+      if (!result.some(r => r.score !== null)) { alert('점수를 한 명 이상 입력해 주세요.'); return; }
+      saveBtn.disabled = true; saveBtn.textContent = '저장 중…';
+      try { await addGame(activeId, result); window.location.href = 'index.html'; }
+      catch (e) { console.error(e); alert('저장 실패. Firebase 설정/규칙을 확인해 주세요.'); saveBtn.disabled = false; saveBtn.textContent = '저장하기'; }
     }
 
     (async () => {
-      try {
-        fillDatalist(await getPlayersOnce());
-      } catch (e) {
-        console.error(e);
+      activeId = await getActiveTournamentId();
+      const t = activeId ? await getTournament(activeId) : null;
+      if (!t) {
+        document.getElementById('subtitle').textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';
+        rowsEl.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>먼저 관리자 → 대회선택에서 대회를 정하세요.</div>`;
+        saveBtn.disabled = true;
+        return;
       }
+      document.getElementById('title').textContent = t.name;
+      document.getElementById('subtitle').textContent = '한 경기 결과를 입력하면 이 대회에 추가됩니다.';
+      fillDatalist(t.participants);
       buildRows();
       saveBtn.addEventListener('click', save);
     })();

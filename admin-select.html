@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대회선택 · 관리자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 관리자</p>
+      <h1>대회선택</h1>
+      <p>진행 중(종료일이 지나지 않은)인 대회 목록입니다. 하나를 선택하면 진행 대회로 설정됩니다.</p>
+    </header>
+
+    <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
+    <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
+  </main>
+
+  <script type="module">
+    import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId, ruleLabel, capacityLabel } from './store.js';
+    if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+
+    const list = document.getElementById('list');
+    let activeId = null;
+
+    async function refreshActive() { activeId = await getActiveTournamentId(); }
+
+    function render(all) {
+      const items = all.filter(isOngoing);
+      if (items.length === 0) { list.innerHTML = `<div class="card"><div class="empty"><strong>진행 중인 대회가 없어요</strong>‘대회생성’에서 먼저 대회를 만드세요.</div></div>`; return; }
+      list.innerHTML = items.map(t => `
+        <div class="record-card">
+          <div class="record-head">
+            <span class="game-no">${t.name}${t.id === activeId ? ' <span class="badge-now">진행중</span>' : ''}</span>
+            <button class="btn ${t.id === activeId ? 'btn-ghost' : 'btn-primary'}" data-id="${t.id}" data-name="${t.name}" style="padding:8px 16px;">${t.id === activeId ? '선택됨' : '선택'}</button>
+          </div>
+          <div class="meta-line">${t.startDate} ~ ${t.endDate} · ${ruleLabel(t)} · 정원 ${capacityLabel(t.capacity)}</div>
+        </div>`).join('');
+
+      list.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        try {
+          await setActiveTournament(b.dataset.id);
+          await refreshActive();
+          alert(`‘${b.dataset.name}’ 대회가 진행 상태로 설정되었습니다.`);
+          render(all);
+        } catch (e) { console.error(e); alert('설정 실패. Firebase 규칙을 확인해 주세요.'); b.disabled = false; }
+      }));
+    }
+
+    (async () => { await refreshActive(); onTournaments(render); })();
+  </script>
+</body>
+</html>

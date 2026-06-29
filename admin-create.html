@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대회생성 · 관리자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 관리자</p>
+      <h1>대회생성</h1>
+      <p>새 대회를 개최합니다.</p>
+    </header>
+
+    <section class="card">
+      <div class="field">
+        <label>대회명</label>
+        <input type="text" id="name" placeholder="예: 2026 봄 정기대회" />
+      </div>
+      <div class="field">
+        <label>규칙</label>
+        <div class="seg" id="seg-rule">
+          <button data-v="individual" class="active">개인전</button>
+          <button data-v="team">팀전</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>세부규칙</label>
+        <div class="row2">
+          <div class="seg" id="seg-timed">
+            <button data-v="off" class="active">시간제 없음</button>
+            <button data-v="on">시간제</button>
+          </div>
+          <div id="min-wrap" style="display:none;">
+            <input type="number" id="minutes" placeholder="분" inputmode="numeric" style="width:100px;" />
+            <span style="color:var(--muted);font-size:13px;">분</span>
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>참가인원</label>
+        <div class="seg" id="seg-cap">
+          <button data-v="4" class="active">4</button>
+          <button data-v="8">8</button>
+          <button data-v="12">12</button>
+          <button data-v="16">16</button>
+          <button data-v="0">무제한</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>기간 (날짜)</label>
+        <div class="row2">
+          <input type="date" id="start" />
+          <span style="color:var(--muted);">~</span>
+          <input type="date" id="end" />
+        </div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="create">대회 만들기</button>
+      <a class="btn btn-ghost" href="admin.html">관리자 메뉴</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { createTournament, todayStr, addDaysStr } from './store.js';
+    if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+
+    const state = { rule: 'individual', timed: 'off', cap: 4 };
+
+    function bindSeg(id, key, after) {
+      const seg = document.getElementById(id);
+      seg.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        seg.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        state[key] = isNaN(Number(b.dataset.v)) ? b.dataset.v : Number(b.dataset.v);
+        if (after) after(b.dataset.v);
+      });
+    }
+    bindSeg('seg-rule', 'rule');
+    bindSeg('seg-timed', 'timed', v => {
+      document.getElementById('min-wrap').style.display = (v === 'on') ? 'flex' : 'none';
+    });
+    bindSeg('seg-cap', 'cap');
+
+    // 기본 기간: 오늘 ~ 내일
+    const today = todayStr();
+    document.getElementById('start').value = today;
+    document.getElementById('end').value = addDaysStr(today, 1);
+
+    document.getElementById('create').addEventListener('click', async () => {
+      const name = document.getElementById('name').value.trim();
+      const start = document.getElementById('start').value;
+      const end = document.getElementById('end').value;
+      const timed = state.timed === 'on';
+      const minutes = timed ? Number(document.getElementById('minutes').value || 0) : null;
+
+      if (!name) { alert('대회명을 입력하세요.'); return; }
+      if (!start || !end) { alert('기간을 지정하세요.'); return; }
+      if (end < start) { alert('종료일이 시작일보다 빠를 수 없습니다.'); return; }
+      if (timed && (!minutes || minutes <= 0)) { alert('시간제 분을 입력하세요.'); return; }
+
+      const btn = document.getElementById('create');
+      btn.disabled = true; btn.textContent = '만드는 중…';
+      try {
+        await createTournament({
+          name, rule: state.rule, timed, minutes,
+          capacity: state.cap, startDate: start, endDate: end, participants: [],
+        });
+        alert(`‘${name}’ 대회가 생성되었습니다.\n‘대회선택’에서 진행 대회로 지정하세요.`);
+        location.href = 'admin.html';
+      } catch (e) { console.error(e); alert('생성 실패. Firebase 규칙을 확인해 주세요.'); btn.disabled = false; btn.textContent = '대회 만들기'; }
+    });
+  </script>
+</body>
+</html>

@@ -14,13 +14,11 @@
   <main class="wrap">
     <header class="topbar">
       <p class="eyebrow">東南西北 · 누적 점수판</p>
-      <h1>마작 점수판</h1>
-      <p>모든 경기를 합산한 누적 순위입니다. 점수를 저장하면 실시간으로 반영됩니다.</p>
+      <h1 id="title">마작 점수판</h1>
+      <p id="subtitle">진행 중인 대회를 불러오는 중…</p>
       <div class="tiles" aria-hidden="true">
-        <span class="tile east">東</span>
-        <span class="tile south">南</span>
-        <span class="tile west">西</span>
-        <span class="tile north">北</span>
+        <span class="tile east">東</span><span class="tile south">南</span>
+        <span class="tile west">西</span><span class="tile north">北</span>
       </div>
     </header>
 
@@ -29,9 +27,7 @@
         <h2>누적 순위</h2>
         <span class="hint" id="status">불러오는 중…</span>
       </div>
-      <div id="board">
-        <div class="empty">잠시만요, 데이터를 불러오고 있어요.</div>
-      </div>
+      <div id="board"><div class="empty">잠시만요…</div></div>
     </section>
 
     <div class="actions">
@@ -39,7 +35,6 @@
       <a class="btn btn-ghost" href="records.html">기록확인</a>
     </div>
 
-    <!-- 관리자 진입 -->
     <div class="admin-gate">
       <input type="password" id="admin-pw" placeholder="관리자 비밀번호" autocomplete="off" />
       <button class="btn btn-ghost" id="admin-enter">입장</button>
@@ -48,24 +43,21 @@
   </main>
 
   <script type="module">
-    import { onGames, computeStandings, checkAdminPassword } from './store.js';
+    import { onActiveTournament, onGamesByTournament, computeStandings, checkAdminPassword } from './store.js';
 
-    const board  = document.getElementById('board');
-    const status = document.getElementById('status');
+    const titleEl = document.getElementById('title');
+    const subEl   = document.getElementById('subtitle');
+    const board   = document.getElementById('board');
+    const status  = document.getElementById('status');
+    let gamesUnsub = null;
 
-    function render(games) {
+    function renderStandings(games) {
       status.textContent = '실시간 연결됨';
       const standings = computeStandings(games);
-
       if (standings.length === 0) {
-        board.innerHTML = `
-          <div class="empty">
-            <strong>아직 기록이 없어요</strong>
-            ‘점수입력’을 눌러 첫 경기를 등록하세요.
-          </div>`;
+        board.innerHTML = `<div class="empty"><strong>아직 기록이 없어요</strong>‘점수입력’으로 첫 경기를 등록하세요.</div>`;
         return;
       }
-
       const body = standings.map(e => `
         <tr>
           <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
@@ -73,37 +65,34 @@
           <td class="num">${e.total.toLocaleString('ko-KR')}</td>
           <td class="num">${e.count}</td>
         </tr>`).join('');
-
-      board.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th style="width:56px">순위</th>
-              <th>아이디</th>
-              <th class="num">총점</th>
-              <th class="num">국수</th>
-            </tr>
-          </thead>
-          <tbody>${body}</tbody>
-        </table>`;
+      board.innerHTML = `<table>
+        <thead><tr><th style="width:56px">순위</th><th>아이디</th><th class="num">총점</th><th class="num">국수</th></tr></thead>
+        <tbody>${body}</tbody></table>`;
     }
 
-    onGames(render);
+    onActiveTournament(t => {
+      if (gamesUnsub) { gamesUnsub(); gamesUnsub = null; }
+      if (!t) {
+        titleEl.textContent = '마작 점수판';
+        subEl.textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';
+        status.textContent = '';
+        board.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>관리자 → 대회선택에서 대회를 정하세요.</div>`;
+        return;
+      }
+      titleEl.textContent = t.name;
+      subEl.textContent = `${t.startDate} ~ ${t.endDate} · 모든 경기 누적 순위`;
+      gamesUnsub = onGamesByTournament(t.id, renderStandings);
+    });
 
-    // 관리자 진입
     const pw = document.getElementById('admin-pw');
     function enterAdmin() {
       if (checkAdminPassword(pw.value)) {
         sessionStorage.setItem('admin_ok', '1');
         window.location.href = 'admin.html';
-      } else {
-        alert('비밀번호가 올바르지 않습니다.');
-        pw.value = '';
-        pw.focus();
-      }
+      } else { alert('비밀번호가 올바르지 않습니다.'); pw.value = ''; pw.focus(); }
     }
     document.getElementById('admin-enter').addEventListener('click', enterAdmin);
-    pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterAdmin(); });
+    pw.addEventListener('keydown', e => { if (e.key === 'Enter') enterAdmin(); });
   </script>
 </body>
 </html>

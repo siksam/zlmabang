@@ -269,3 +269,56 @@ input[type="number"] { text-align: right; }
 }
 .mini tr:last-child td { border-bottom: none; }
 .mini td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* =========================================================
+   추가: 대회 관리 화면 요소
+   ========================================================= */
+
+/* 관리자 메뉴 */
+.menu-grid { display: grid; gap: 10px; margin-top: 20px; }
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--surface); box-shadow: var(--shadow);
+  text-decoration: none; color: var(--ink); font-weight: 600;
+}
+.menu-item:hover { background: #faf8f2; }
+.menu-item .arr { color: var(--muted); }
+
+/* 폼 필드 */
+.field { padding: 16px 14px; border-bottom: 1px solid var(--line); }
+.field:last-child { border-bottom: none; }
+.field > label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 10px; font-weight: 600; }
+.field .row2 { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* 세그먼트(버튼 선택) */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.seg button {
+  font: inherit; cursor: pointer; padding: 9px 14px; border-radius: 9px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+}
+.seg button.active { background: var(--felt); color: #F4F1E8; border-color: var(--felt); }
+
+/* E / D 버튼 */
+.ed { display: inline-flex; gap: 6px; }
+.ed button {
+  font: inherit; cursor: pointer; width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--line); background: #fff; font-weight: 700; color: var(--ink);
+}
+.ed button.del { color: var(--accent); border-color: #e9c4be; }
+.ed button:hover { background: #faf8f2; }
+
+/* 메타 줄 / 배지 */
+.meta-line { font-size: 13px; color: var(--muted); }
+.badge-now {
+  font-size: 11px; font-weight: 700; color: #F4F1E8; background: var(--felt);
+  padding: 2px 8px; border-radius: 999px; margin-left: 6px;
+}
+
+/* 참가자 입력 행 */
+.part-row { display: grid; gap: 8px; padding: 6px 14px; }
+.part-row input { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; }
+
+/* 인라인 편집 행 */
+.edit-row { display: grid; grid-template-columns: 96px 1fr 100px; gap: 8px; padding: 6px 8px; align-items: center; }
+.edit-row select, .edit-row input { font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
