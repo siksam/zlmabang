@@ -55,6 +55,14 @@
           <input type="number" data-ef="minutes" value="${t.minutes || ''}" placeholder="분" style="width:90px;">
         </div>
         <div class="ef"><label>참가인원</label><select data-ef="capacity">${capOpts}</select></div>
+        <div class="ef"><label>시작/반환</label>
+          <input type="number" data-ef="startScore" value="${t.startScore ?? 25000}" placeholder="시작" style="width:90px;">
+          <input type="number" data-ef="returnScore" value="${t.returnScore ?? 25000}" placeholder="반환" style="width:90px;">
+        </div>
+        <div class="ef"><label>우마</label>
+          <input type="number" data-ef="uma1" value="${t.uma1 ?? ''}" placeholder="1·2등" style="width:90px;"> /
+          <input type="number" data-ef="uma2" value="${t.uma2 ?? ''}" placeholder="3·4등" style="width:90px;">
+        </div>
         <div class="ef"><label>기간</label>
           <input type="date" data-ef="startDate" value="${t.startDate}"> ~
           <input type="date" data-ef="endDate" value="${t.endDate}">
@@ -111,6 +119,10 @@
         const minutes = timed ? Number(get('minutes').value || 0) : null;
         const teamCount = rule === 'team' ? Number(get('teamCount').value || 0) : null;
         const capacity = Number(get('capacity').value);
+        const startScore  = Number(get('startScore').value)  || 25000;
+        const returnScore = Number(get('returnScore').value) || 25000;
+        const uma1 = Number(get('uma1').value) || 0;
+        const uma2 = Number(get('uma2').value) || 0;
         const startDate = get('startDate').value;
         const endDate = get('endDate').value;
 
@@ -120,7 +132,7 @@
         if (rule === 'team' && (!teamCount || teamCount <= 0)) { alert('팀 수를 입력하세요.'); return; }
         if (timed && (!minutes || minutes <= 0)) { alert('시간제 분을 입력하세요.'); return; }
 
-        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, capacity, startDate, endDate }); editId = null; }
+        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, capacity, startScore, returnScore, uma1, uma2, startDate, endDate }); editId = null; }
         catch (e) { console.error(e); alert('저장 실패.'); }
       }
     }

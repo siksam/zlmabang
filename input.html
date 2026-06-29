@@ -21,6 +21,7 @@
     <section class="card">
       <div class="col-head"><span>위치</span><span>아이디</span><span style="text-align:right">점수</span></div>
       <div id="rows"><div class="empty">불러오는 중…</div></div>
+      <div class="sum-line" id="sum-line"></div>
     </section>
 
     <datalist id="player-list"></datalist>
@@ -37,8 +38,9 @@
 
     const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
     const rowsEl = document.getElementById('rows');
+    const sumLine = document.getElementById('sum-line');
     const saveBtn = document.getElementById('save');
-    let activeId = null;
+    let curT = null, expectedSum = 100000;
 
     function fillDatalist(participants) {
       document.getElementById('player-list').innerHTML =
@@ -51,33 +53,52 @@
           <input type="text" list="player-list" placeholder="아이디 입력 또는 선택" data-role="id" />
           <input type="number" placeholder="점수" inputmode="numeric" data-role="score" />
         </div>`).join('');
+      rowsEl.querySelectorAll('[data-role="score"]').forEach(inp => inp.addEventListener('input', updateSum));
+      updateSum();
     }
+    function currentSum() {
+      return [...document.querySelectorAll('[data-role="score"]')]
+        .reduce((s, el) => s + (el.value === '' ? 0 : Number(el.value)), 0);
+    }
+    function updateSum() {
+      const sum = currentSum();
+      const ok = sum === expectedSum;
+      sumLine.innerHTML = `합계 <b class="${ok ? 'ok' : 'bad'}">${sum.toLocaleString('ko-KR')}</b> / ${expectedSum.toLocaleString('ko-KR')}`;
+    }
+
     async function save() {
-      if (!activeId) { alert('진행 중인 대회가 없습니다.'); return; }
+      if (!curT) { alert('진행 중인 대회가 없습니다.'); return; }
       const ids = [...document.querySelectorAll('[data-role="id"]')];
       const scores = [...document.querySelectorAll('[data-role="score"]')];
       const result = SEATS.map((seat, i) => ({
         pos: seat.pos, id: ids[i].value.trim(),
         score: scores[i].value === '' ? null : Number(scores[i].value),
       }));
-      if (!result.some(r => r.score !== null)) { alert('점수를 한 명 이상 입력해 주세요.'); return; }
+
+      // 아이디가 하나라도 비어 있으면 저장 불가
+      if (result.some(r => !r.id)) { alert('아이디가 입력되지 않았습니다. 확인해주세요'); return; }
+      // 합계가 맞지 않으면 저장 불가
+      const sum = result.reduce((s, r) => s + (r.score == null || Number.isNaN(r.score) ? NaN : r.score), 0);
+      if (Number.isNaN(sum) || sum !== expectedSum) { alert('합계점수가 맞지 않습니다. 확인해주세요.'); return; }
+
       saveBtn.disabled = true; saveBtn.textContent = '저장 중…';
-      try { await addGame(activeId, result); window.location.href = 'index.html'; }
+      try { await addGame(curT.id, result); window.location.href = 'index.html'; }
       catch (e) { console.error(e); alert('저장 실패. Firebase 설정/규칙을 확인해 주세요.'); saveBtn.disabled = false; saveBtn.textContent = '저장하기'; }
     }
 
     (async () => {
-      activeId = await getActiveTournamentId();
-      const t = activeId ? await getTournament(activeId) : null;
-      if (!t) {
+      const id = await getActiveTournamentId();
+      curT = id ? await getTournament(id) : null;
+      if (!curT) {
         document.getElementById('subtitle').textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';
         rowsEl.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>먼저 관리자 → 대회선택에서 대회를 정하세요.</div>`;
         saveBtn.disabled = true;
         return;
       }
-      document.getElementById('title').textContent = t.name;
-      document.getElementById('subtitle').textContent = '한 경기 결과를 입력하면 이 대회에 추가됩니다.';
-      fillDatalist(t.participants);
+      expectedSum = 4 * (curT.startScore != null ? Number(curT.startScore) : 25000);
+      document.getElementById('title').textContent = curT.name;
+      document.getElementById('subtitle').textContent = `한 경기 결과를 입력하면 이 대회에 추가됩니다. (합계 ${expectedSum.toLocaleString('ko-KR')})`;
+      fillDatalist(curT.participants);
       buildRows();
       saveBtn.addEventListener('click', save);
     })();

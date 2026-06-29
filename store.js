@@ -140,29 +140,87 @@ export async function getGamesByTournament(tid) {
 }
 
 /* ---------- 집계/순위 ---------- */
-export function computeStandings(games) {
+const SEAT_INDEX = { '동': 0, '남': 1, '서': 2, '북': 3 };
+
+// 한 경기 순위: 점수 높은 순, 동점이면 동>남>서>북. 유니크 순위(1..n)
+export function rankWithinGame(rows) {
+  const scored = rows.filter(r => r.score !== null && r.score !== '' && !Number.isNaN(Number(r.score)));
+  const sorted = [...scored].sort((a, b) => {
+    const d = Number(b.score) - Number(a.score);
+    if (d !== 0) return d;
+    return (SEAT_INDEX[a.pos] ?? 9) - (SEAT_INDEX[b.pos] ?? 9);
+  });
+  const map = new Map();
+  sorted.forEach((r, i) => map.set(r, i + 1));
+  return map;
+}
+
+// 우마: 1등 +uma1, 2등 +uma2, 3등 -uma2, 4등 -uma1
+function umaForRank(rank, uma1, uma2) {
+  if (rank === 1) return  uma1;
+  if (rank === 2) return  uma2;
+  if (rank === 3) return -uma2;
+  if (rank === 4) return -uma1;
+  return 0;
+}
+
+// 한 경기의 승점: row -> { rank, points }
+// 승점 = (점수 - 반환점수)/1000 + 우마
+export function gamePoints(rows, t) {
+  const ret  = (t && t.returnScore != null) ? Number(t.returnScore) : 25000;
+  const uma1 = (t && t.uma1 != null) ? Number(t.uma1) : 0;
+  const uma2 = (t && t.uma2 != null) ? Number(t.uma2) : 0;
+  const ranks = rankWithinGame(rows);
+  const out = new Map();
+  rows.forEach(r => {
+    if (!ranks.has(r)) return;
+    const rank = ranks.get(r);
+    const points = (Number(r.score) - ret) / 1000 + umaForRank(rank, uma1, uma2);
+    out.set(r, { rank, points });
+  });
+  return out;
+}
+
+// 누적 개인 순위 (승점 합산)
+export function computeStandings(games, t) {
   const map = new Map();
   for (const g of games) {
+    const gp = gamePoints(g.rows, t);
     for (const r of g.rows) {
       const id = (r.id || '').trim();
-      const score = (r.score === null || r.score === '') ? null : Number(r.score);
-      if (!id || score === null || Number.isNaN(score)) continue;
-      if (!map.has(id)) map.set(id, { id, total: 0, count: 0 });
-      const e = map.get(id); e.total += score; e.count += 1;
+      if (!id || !gp.has(r)) continue;
+      if (!map.has(id)) map.set(id, { id, points: 0, count: 0 });
+      const e = map.get(id);
+      e.points += gp.get(r).points;
+      e.count += 1;
     }
   }
-  const arr = [...map.values()].sort((a, b) => b.total - a.total);
-  arr.forEach((e, i) => { e.rank = (i > 0 && arr[i - 1].total === e.total) ? arr[i - 1].rank : i + 1; });
+  const arr = [...map.values()].sort((a, b) => b.points - a.points);
+  arr.forEach((e, i) => { e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1; });
   return arr;
 }
-export function rankWithinGame(rows) {
-  const scored = rows.filter(r => r.score !== null && r.score !== '');
-  const sorted = [...scored].sort((a, b) => Number(b.score) - Number(a.score));
+
+// 팀 순위 (팀원 승점 합산)
+export function computeTeamStandings(standings, participants) {
+  const teamOf = {};
+  (participants || []).forEach(p => { if (p && p.id) teamOf[p.id] = p.team || '(미지정)'; });
   const map = new Map();
-  sorted.forEach((r, i) => {
-    map.set(r, (i > 0 && Number(sorted[i - 1].score) === Number(r.score)) ? map.get(sorted[i - 1]) : i + 1);
+  standings.forEach(e => {
+    const team = teamOf[e.id] || '(미지정)';
+    if (!map.has(team)) map.set(team, { team, points: 0, members: 0 });
+    const tt = map.get(team);
+    tt.points += e.points; tt.members += 1;
   });
-  return map;
+  const arr = [...map.values()].sort((a, b) => b.points - a.points);
+  arr.forEach((e, i) => { e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1; });
+  return arr;
+}
+
+// 승점 표시 (+부호, 소수 1자리)
+export function fmtPoints(v) {
+  const n = Math.round(v * 10) / 10;
+  const s = Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return (n > 0 ? '+' : '') + s;
 }
 
 /* ---------- 표시용 헬퍼 ---------- */

@@ -337,3 +337,16 @@ input[type="number"] { text-align: right; }
 .ef select, .ef input {
   font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
 }
+
+/* 참가자 입력 행: 팀전은 아이디+팀 한 줄 */
+.part-row.team { grid-template-columns: 1fr 1fr; }
+.part-row.solo { grid-template-columns: 1fr; }
+
+/* 순위표 소제목 (팀/개인) */
+.subhead { font-weight: 700; font-size: 14px; padding: 14px 14px 4px; color: var(--ink); }
+.subhead:first-child { padding-top: 6px; }
+
+/* 점수입력 합계 표시 */
+.sum-line { padding: 12px 14px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); text-align: right; }
+.sum-line b.ok { color: var(--felt); }
+.sum-line b.bad { color: var(--accent); }

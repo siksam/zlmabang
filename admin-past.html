@@ -23,7 +23,7 @@
   </main>
 
   <script type="module">
-    import { onTournaments, getGamesByTournament, computeStandings,
+    import { onTournaments, getGamesByTournament, computeStandings, fmtPoints,
              updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
@@ -37,8 +37,8 @@
       if (!s || s.length === 0) return `<div class="empty">기록 없음</div>`;
       const body = s.map(e => `<tr>
         <td><span class="rank r${e.rank<=3?e.rank:''}">${e.rank}</span></td>
-        <td>${e.id}</td><td class="num">${e.total.toLocaleString('ko-KR')}</td><td class="num">${e.count}</td></tr>`).join('');
-      return `<table class="mini"><thead><tr><th style="width:44px">순위</th><th>아이디</th><th class="num">총점</th><th class="num">국수</th></tr></thead><tbody>${body}</tbody></table>`;
+        <td>${e.id}</td><td class="num">${fmtPoints(e.points)}</td><td class="num">${e.count}</td></tr>`).join('');
+      return `<table class="mini"><thead><tr><th style="width:44px">순위</th><th>아이디</th><th class="num">승점</th><th class="num">국수</th></tr></thead><tbody>${body}</tbody></table>`;
     }
 
     function render() {
@@ -73,7 +73,7 @@
     async function handle(act, id) {
       if (act === 'toggle') {
         if (openStand.has(id)) openStand.delete(id);
-        else { openStand.add(id); if (!standCache[id]) { render(); standCache[id] = computeStandings(await getGamesByTournament(id)); } }
+        else { openStand.add(id); if (!standCache[id]) { render(); standCache[id] = computeStandings(await getGamesByTournament(id), tournaments.find(x => x.id === id)); } }
         render(); return;
       }
       if (act === 'edit') { openEdit.has(id) ? openEdit.delete(id) : openEdit.add(id); render(); return; }

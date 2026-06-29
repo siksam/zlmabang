@@ -24,7 +24,7 @@
 
     <section class="card">
       <div class="card-head">
-        <h2>누적 순위</h2>
+        <h2>순위</h2>
         <span class="hint" id="status">불러오는 중…</span>
       </div>
       <div id="board"><div class="empty">잠시만요…</div></div>
@@ -43,7 +43,7 @@
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, checkAdminPassword } from './store.js';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, fmtPoints, checkAdminPassword } from './store.js';
 
     const titleEl = document.getElementById('title');
     const subEl   = document.getElementById('subtitle');
@@ -51,23 +51,46 @@
     const status  = document.getElementById('status');
     let gamesUnsub = null;
 
-    function renderStandings(games) {
-      status.textContent = '실시간 연결됨';
-      const standings = computeStandings(games);
-      if (standings.length === 0) {
-        board.innerHTML = `<div class="empty"><strong>아직 기록이 없어요</strong>‘점수입력’으로 첫 경기를 등록하세요.</div>`;
-        return;
-      }
+    function indivTable(standings) {
       const body = standings.map(e => `
         <tr>
           <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
           <td>${e.id}</td>
-          <td class="num">${e.total.toLocaleString('ko-KR')}</td>
+          <td class="num">${fmtPoints(e.points)}</td>
           <td class="num">${e.count}</td>
         </tr>`).join('');
-      board.innerHTML = `<table>
-        <thead><tr><th style="width:56px">순위</th><th>아이디</th><th class="num">총점</th><th class="num">국수</th></tr></thead>
+      return `<table>
+        <thead><tr><th style="width:56px">순위</th><th>아이디</th><th class="num">승점</th><th class="num">국수</th></tr></thead>
         <tbody>${body}</tbody></table>`;
+    }
+    function teamTable(teams) {
+      const body = teams.map(e => `
+        <tr>
+          <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
+          <td>${e.team}</td>
+          <td class="num">${fmtPoints(e.points)}</td>
+        </tr>`).join('');
+      return `<table>
+        <thead><tr><th style="width:56px">순위</th><th>팀</th><th class="num">승점</th></tr></thead>
+        <tbody>${body}</tbody></table>`;
+    }
+
+    function renderAll(games, t) {
+      status.textContent = '실시간 연결됨';
+      const standings = computeStandings(games, t);
+      if (standings.length === 0) {
+        board.innerHTML = `<div class="empty"><strong>아직 기록이 없어요</strong>‘점수입력’으로 첫 경기를 등록하세요.</div>`;
+        return;
+      }
+      let html = '';
+      if (t.rule === 'team') {
+        const teams = computeTeamStandings(standings, t.participants);
+        html += `<div class="subhead">팀 순위</div>` + teamTable(teams);
+        html += `<div class="subhead">개인 순위</div>` + indivTable(standings);
+      } else {
+        html += indivTable(standings);
+      }
+      board.innerHTML = html;
     }
 
     onActiveTournament(t => {
@@ -80,16 +103,14 @@
         return;
       }
       titleEl.textContent = t.name;
-      subEl.textContent = `${t.startDate} ~ ${t.endDate} · 모든 경기 누적 순위`;
-      gamesUnsub = onGamesByTournament(t.id, renderStandings);
+      subEl.textContent = `${t.startDate} ~ ${t.endDate} · 승점 기준 누적 순위`;
+      gamesUnsub = onGamesByTournament(t.id, games => renderAll(games, t));
     });
 
     const pw = document.getElementById('admin-pw');
     function enterAdmin() {
-      if (checkAdminPassword(pw.value)) {
-        sessionStorage.setItem('admin_ok', '1');
-        window.location.href = 'admin.html';
-      } else { alert('비밀번호가 올바르지 않습니다.'); pw.value = ''; pw.focus(); }
+      if (checkAdminPassword(pw.value)) { sessionStorage.setItem('admin_ok', '1'); window.location.href = 'admin.html'; }
+      else { alert('비밀번호가 올바르지 않습니다.'); pw.value = ''; pw.focus(); }
     }
     document.getElementById('admin-enter').addEventListener('click', enterAdmin);
     pw.addEventListener('keydown', e => { if (e.key === 'Enter') enterAdmin(); });

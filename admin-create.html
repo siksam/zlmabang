@@ -50,6 +50,21 @@
         </div>
       </div>
       <div class="field">
+        <label>시작점수 / 반환점수 (미입력 시 25000)</label>
+        <div class="row2">
+          <div class="inline-num"><input type="number" id="startScore" value="25000" inputmode="numeric"><span>시작</span></div>
+          <div class="inline-num"><input type="number" id="returnScore" value="25000" inputmode="numeric"><span>반환</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label>우마 (1·2등 / 3·4등은 자동 반전)</label>
+        <div class="inline-num">
+          <input type="number" id="uma1" value="15" inputmode="numeric" style="width:90px;">
+          <span>/</span>
+          <input type="number" id="uma2" value="5" inputmode="numeric" style="width:90px;">
+        </div>
+      </div>
+      <div class="field">
         <label>참가인원</label>
         <div class="seg" id="seg-cap">
           <button data-v="4" class="active">4</button>
@@ -111,6 +126,10 @@
       const timed = state.timed === 'on';
       const minutes = timed ? Number(document.getElementById('minutes').value || 0) : null;
       const teamCount = isTeam ? Number(document.getElementById('teamcount').value || 0) : null;
+      const startScore  = Number(document.getElementById('startScore').value)  || 25000;
+      const returnScore = Number(document.getElementById('returnScore').value) || 25000;
+      const uma1 = Number(document.getElementById('uma1').value) || 0;
+      const uma2 = Number(document.getElementById('uma2').value) || 0;
 
       if (!name) { alert('대회명을 입력하세요.'); return; }
       if (!start || !end) { alert('기간을 지정하세요.'); return; }
@@ -123,6 +142,7 @@
       try {
         await createTournament({
           name, rule: state.rule, teamCount, timed, minutes,
+          startScore, returnScore, uma1, uma2,
           capacity: state.cap, startDate: start, endDate: end, participants: [],
         });
         alert(`‘${name}’ 대회가 생성되었습니다.\n‘대회선택’에서 진행 대회로 지정하세요.`);
