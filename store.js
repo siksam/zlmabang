@@ -189,31 +189,59 @@ export function computeStandings(games, t) {
     for (const r of g.rows) {
       const id = (r.id || '').trim();
       if (!id || !gp.has(r)) continue;
-      if (!map.has(id)) map.set(id, { id, points: 0, count: 0 });
+      if (!map.has(id)) map.set(id, { id, points: 0, count: 0, p1: 0, p2: 0, p3: 0, p4: 0, rankSum: 0 });
       const e = map.get(id);
-      e.points += gp.get(r).points;
-      e.count += 1;
+      const { rank, points } = gp.get(r);
+      e.points += points; e.count += 1; e.rankSum += rank;
+      if (rank === 1) e.p1++; else if (rank === 2) e.p2++; else if (rank === 3) e.p3++; else if (rank === 4) e.p4++;
     }
   }
   const arr = [...map.values()].sort((a, b) => b.points - a.points);
-  arr.forEach((e, i) => { e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1; });
+  arr.forEach((e, i) => {
+    e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1;
+    e.gap = (i === 0) ? null : (arr[i - 1].points - e.points);   // 바로 윗순위와의 승점차
+    e.avgPoints = e.count ? e.points / e.count : 0;
+    e.avgRank = e.count ? e.rankSum / e.count : 0;
+  });
   return arr;
 }
 
-// 팀 순위 (팀원 승점 합산)
+// 팀 순위 (팀원 승점·착순 합산)
 export function computeTeamStandings(standings, participants) {
   const teamOf = {};
   (participants || []).forEach(p => { if (p && p.id) teamOf[p.id] = p.team || '(미지정)'; });
   const map = new Map();
   standings.forEach(e => {
     const team = teamOf[e.id] || '(미지정)';
-    if (!map.has(team)) map.set(team, { team, points: 0, members: 0 });
+    if (!map.has(team)) map.set(team, { team, points: 0, count: 0, p1: 0, p2: 0, p3: 0, p4: 0, members: 0 });
     const tt = map.get(team);
-    tt.points += e.points; tt.members += 1;
+    tt.points += e.points; tt.count += e.count; tt.members += 1;
+    tt.p1 += e.p1; tt.p2 += e.p2; tt.p3 += e.p3; tt.p4 += e.p4;
   });
   const arr = [...map.values()].sort((a, b) => b.points - a.points);
-  arr.forEach((e, i) => { e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1; });
+  arr.forEach((e, i) => {
+    e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1;
+    e.gap = (i === 0) ? null : (arr[i - 1].points - e.points);
+    e.avgPoints = e.count ? e.points / e.count : 0;
+  });
   return arr;
+}
+
+// 팀내순위: id -> { team, teamRank, teamSize }
+export function computeTeamInfo(standings, participants) {
+  const teamOf = {};
+  (participants || []).forEach(p => { if (p && p.id) teamOf[p.id] = p.team || '(미지정)'; });
+  const byTeam = {};
+  standings.forEach(e => { const tm = teamOf[e.id] || '(미지정)'; (byTeam[tm] = byTeam[tm] || []).push(e); });
+  const info = {};
+  Object.entries(byTeam).forEach(([tm, members]) => {
+    const sorted = [...members].sort((a, b) => b.points - a.points);
+    sorted.forEach((e, i) => {
+      const teamRank = (i > 0 && sorted[i - 1].points === e.points) ? info[sorted[i - 1].id].teamRank : i + 1;
+      info[e.id] = { team: tm, teamRank, teamSize: members.length };
+    });
+  });
+  return info;
 }
 
 // 승점 표시 (+부호, 소수 1자리)
@@ -222,6 +250,9 @@ export function fmtPoints(v) {
   const s = Number.isInteger(n) ? String(n) : n.toFixed(1);
   return (n > 0 ? '+' : '') + s;
 }
+// 부호 없는 소수 표시
+export function fmt1(v) { const n = Math.round(v * 10) / 10; return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+export function fmt2(v) { return (Math.round(v * 100) / 100).toFixed(2); }
 
 /* ---------- 표시용 헬퍼 ---------- */
 export function capacityLabel(c) { return (!c || c === 0) ? '무제한' : `${c}명`; }

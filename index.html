@@ -28,6 +28,7 @@
         <span class="hint" id="status">불러오는 중…</span>
       </div>
       <div id="board"><div class="empty">잠시만요…</div></div>
+      <p class="legend" id="legend" style="display:none;">평균=평균승점 · 평순=평균순위 · 팀내=팀 내 등수/인원 · 1·2·3·4=착순 횟수 · 승점차=바로 윗순위와의 차</p>
     </section>
 
     <div class="actions">
@@ -43,52 +44,65 @@
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, fmtPoints, checkAdminPassword } from './store.js';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword } from './store.js';
 
     const titleEl = document.getElementById('title');
     const subEl   = document.getElementById('subtitle');
     const board   = document.getElementById('board');
     const status  = document.getElementById('status');
+    const legend  = document.getElementById('legend');
     let gamesUnsub = null;
 
-    function indivTable(standings) {
-      const body = standings.map(e => `
-        <tr>
-          <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
-          <td>${e.id}</td>
-          <td class="num">${fmtPoints(e.points)}</td>
-          <td class="num">${e.count}</td>
-        </tr>`).join('');
-      return `<table>
-        <thead><tr><th style="width:56px">순위</th><th>아이디</th><th class="num">승점</th><th class="num">국수</th></tr></thead>
-        <tbody>${body}</tbody></table>`;
-    }
+    const rankCell = r => `<td><span class="rank r${r <= 3 ? r : ''}">${r}</span></td>`;
+    const placeCells = e => `<td class="c1">${e.p1}</td><td>${e.p2}</td><td>${e.p3}</td><td class="c4">${e.p4}</td>`;
+    const gapCell = g => `<td>${g == null ? '-' : fmt1(g)}</td>`;
+
     function teamTable(teams) {
-      const body = teams.map(e => `
-        <tr>
-          <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
-          <td>${e.team}</td>
-          <td class="num">${fmtPoints(e.points)}</td>
-        </tr>`).join('');
-      return `<table>
-        <thead><tr><th style="width:56px">순위</th><th>팀</th><th class="num">승점</th></tr></thead>
-        <tbody>${body}</tbody></table>`;
+      const head = `<tr><th>순위</th><th class="tl">팀</th><th>승점</th><th>승점차</th><th>평균</th>
+        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>국수</th></tr>`;
+      const body = teams.map(e => `<tr>
+        ${rankCell(e.rank)}<td class="tl">${e.team}</td>
+        <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
+        ${placeCells(e)}<td>${e.count}</td></tr>`).join('');
+      return `<div class="tscroll"><table class="stats"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    }
+
+    function indivTable(standings, teamInfo) {
+      const teamMode = !!teamInfo;
+      const head = `<tr><th>순위</th><th class="tl">아이디</th>
+        ${teamMode ? '<th class="tl">팀</th><th>팀내</th>' : ''}
+        <th>승점</th><th>승점차</th><th>평균</th>
+        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
+      const body = standings.map(e => {
+        const ti = teamMode ? teamInfo[e.id] : null;
+        const teamCols = teamMode
+          ? `<td class="tl">${ti ? ti.team : '(미지정)'}</td><td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>`
+          : '';
+        return `<tr>
+          ${rankCell(e.rank)}<td class="tl">${e.id}</td>${teamCols}
+          <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
+          ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`;
+      }).join('');
+      return `<div class="tscroll"><table class="stats"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
     function renderAll(games, t) {
       status.textContent = '실시간 연결됨';
       const standings = computeStandings(games, t);
       if (standings.length === 0) {
+        legend.style.display = 'none';
         board.innerHTML = `<div class="empty"><strong>아직 기록이 없어요</strong>‘점수입력’으로 첫 경기를 등록하세요.</div>`;
         return;
       }
+      legend.style.display = 'block';
       let html = '';
       if (t.rule === 'team') {
         const teams = computeTeamStandings(standings, t.participants);
+        const info = computeTeamInfo(standings, t.participants);
         html += `<div class="subhead">팀 순위</div>` + teamTable(teams);
-        html += `<div class="subhead">개인 순위</div>` + indivTable(standings);
+        html += `<div class="subhead">개인 순위</div>` + indivTable(standings, info);
       } else {
-        html += indivTable(standings);
+        html += indivTable(standings, null);
       }
       board.innerHTML = html;
     }
@@ -98,7 +112,7 @@
       if (!t) {
         titleEl.textContent = '마작 점수판';
         subEl.textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';
-        status.textContent = '';
+        status.textContent = ''; legend.style.display = 'none';
         board.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>관리자 → 대회선택에서 대회를 정하세요.</div>`;
         return;
       }

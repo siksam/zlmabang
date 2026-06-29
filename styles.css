@@ -350,3 +350,19 @@ input[type="number"] { text-align: right; }
 .sum-line { padding: 12px 14px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); text-align: right; }
 .sum-line b.ok { color: var(--felt); }
 .sum-line b.bad { color: var(--accent); }
+
+/* 상세 순위표 (다중 컬럼) */
+.tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 6px 4px; }
+.stats { width: 100%; border-collapse: collapse; font-size: 13px; }
+.stats th, .stats td {
+  padding: 9px 8px; border-bottom: 1px solid var(--line);
+  white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums;
+}
+.stats th { color: var(--muted); font-weight: 600; font-size: 12px; }
+.stats th.tl, .stats td.tl { text-align: left; }
+.stats tbody tr:last-child td { border-bottom: none; }
+.stats td.c1, .stats th.c1 { color: #2f6fd0; }   /* 1착: 파랑 */
+.stats td.c4, .stats th.c4 { color: var(--accent); } /* 4착: 빨강 */
+.stats .rank { width: 24px; height: 24px; font-size: 12px; }
+
+.legend { padding: 10px 14px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
