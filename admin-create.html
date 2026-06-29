@@ -25,9 +25,15 @@
       </div>
       <div class="field">
         <label>규칙</label>
-        <div class="seg" id="seg-rule">
-          <button data-v="individual" class="active">개인전</button>
-          <button data-v="team">팀전</button>
+        <div class="row2">
+          <div class="seg" id="seg-rule">
+            <button data-v="individual" class="active">개인전</button>
+            <button data-v="team">팀전</button>
+          </div>
+          <div class="inline-num" id="team-wrap" style="display:none;">
+            <input type="number" id="teamcount" placeholder="팀 수" inputmode="numeric" />
+            <span>팀</span>
+          </div>
         </div>
       </div>
       <div class="field">
@@ -37,9 +43,9 @@
             <button data-v="off" class="active">시간제 없음</button>
             <button data-v="on">시간제</button>
           </div>
-          <div id="min-wrap" style="display:none;">
-            <input type="number" id="minutes" placeholder="분" inputmode="numeric" style="width:100px;" />
-            <span style="color:var(--muted);font-size:13px;">분</span>
+          <div class="inline-num" id="min-wrap" style="display:none;">
+            <input type="number" id="minutes" placeholder="분" inputmode="numeric" />
+            <span>분</span>
           </div>
         </div>
       </div>
@@ -85,13 +91,14 @@
         if (after) after(b.dataset.v);
       });
     }
-    bindSeg('seg-rule', 'rule');
+    bindSeg('seg-rule', 'rule', v => {
+      document.getElementById('team-wrap').style.display = (v === 'team') ? 'flex' : 'none';
+    });
     bindSeg('seg-timed', 'timed', v => {
       document.getElementById('min-wrap').style.display = (v === 'on') ? 'flex' : 'none';
     });
     bindSeg('seg-cap', 'cap');
 
-    // 기본 기간: 오늘 ~ 내일
     const today = todayStr();
     document.getElementById('start').value = today;
     document.getElementById('end').value = addDaysStr(today, 1);
@@ -100,19 +107,22 @@
       const name = document.getElementById('name').value.trim();
       const start = document.getElementById('start').value;
       const end = document.getElementById('end').value;
+      const isTeam = state.rule === 'team';
       const timed = state.timed === 'on';
       const minutes = timed ? Number(document.getElementById('minutes').value || 0) : null;
+      const teamCount = isTeam ? Number(document.getElementById('teamcount').value || 0) : null;
 
       if (!name) { alert('대회명을 입력하세요.'); return; }
       if (!start || !end) { alert('기간을 지정하세요.'); return; }
       if (end < start) { alert('종료일이 시작일보다 빠를 수 없습니다.'); return; }
+      if (isTeam && (!teamCount || teamCount <= 0)) { alert('팀 수를 입력하세요.'); return; }
       if (timed && (!minutes || minutes <= 0)) { alert('시간제 분을 입력하세요.'); return; }
 
       const btn = document.getElementById('create');
       btn.disabled = true; btn.textContent = '만드는 중…';
       try {
         await createTournament({
-          name, rule: state.rule, timed, minutes,
+          name, rule: state.rule, teamCount, timed, minutes,
           capacity: state.cap, startDate: start, endDate: end, participants: [],
         });
         alert(`‘${name}’ 대회가 생성되었습니다.\n‘대회선택’에서 진행 대회로 지정하세요.`);

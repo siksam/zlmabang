@@ -15,7 +15,7 @@
     <header class="topbar">
       <p class="eyebrow">東南西北 · 관리자</p>
       <h1>대회선택</h1>
-      <p>진행 중(종료일이 지나지 않은)인 대회 목록입니다. 하나를 선택하면 진행 대회로 설정됩니다.</p>
+      <p>진행 중(종료일이 지나지 않은)인 대회 목록입니다. 선택·변경·삭제할 수 있어요.</p>
     </header>
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
@@ -23,38 +23,109 @@
   </main>
 
   <script type="module">
-    import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId, ruleLabel, capacityLabel } from './store.js';
+    import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId,
+             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
     const list = document.getElementById('list');
     let activeId = null;
+    let all = [];
+    let editId = null; // 변경 패널 열린 대회 (하나만)
 
     async function refreshActive() { activeId = await getActiveTournamentId(); }
 
-    function render(all) {
+    function editPanel(t) {
+      const cap = t.capacity || 0;
+      const capOpts = [4, 8, 12, 16, 0].map(c =>
+        `<option value="${c}" ${cap === c ? 'selected' : ''}>${c === 0 ? '무제한' : c + '명'}</option>`).join('');
+      return `<div class="edit-panel">
+        <div class="ef"><label>대회명</label><input type="text" data-ef="name" value="${t.name}"></div>
+        <div class="ef"><label>규칙</label>
+          <select data-ef="rule">
+            <option value="individual" ${t.rule !== 'team' ? 'selected' : ''}>개인전</option>
+            <option value="team" ${t.rule === 'team' ? 'selected' : ''}>팀전</option>
+          </select>
+          <input type="number" data-ef="teamCount" value="${t.teamCount || ''}" placeholder="팀 수" style="width:90px;">
+        </div>
+        <div class="ef"><label>시간제</label>
+          <select data-ef="timed">
+            <option value="off" ${!t.timed ? 'selected' : ''}>없음</option>
+            <option value="on" ${t.timed ? 'selected' : ''}>시간제</option>
+          </select>
+          <input type="number" data-ef="minutes" value="${t.minutes || ''}" placeholder="분" style="width:90px;">
+        </div>
+        <div class="ef"><label>참가인원</label><select data-ef="capacity">${capOpts}</select></div>
+        <div class="ef"><label>기간</label>
+          <input type="date" data-ef="startDate" value="${t.startDate}"> ~
+          <input type="date" data-ef="endDate" value="${t.endDate}">
+        </div>
+        <div style="display:flex;gap:8px;padding:8px 0;">
+          <button class="btn btn-primary" data-act="savemeta" data-id="${t.id}" style="padding:8px 16px;">저장</button>
+          <button class="btn btn-ghost" data-act="canceledit" data-id="${t.id}" style="padding:8px 16px;">취소</button>
+        </div>
+      </div>`;
+    }
+
+    function render() {
       const items = all.filter(isOngoing);
-      if (items.length === 0) { list.innerHTML = `<div class="card"><div class="empty"><strong>진행 중인 대회가 없어요</strong>‘대회생성’에서 먼저 대회를 만드세요.</div></div>`; return; }
+      if (items.length === 0) { list.innerHTML = `<div class="card"><div class="empty"><strong>진행 중인 대회가 없어요</strong>‘대회생성’에서 먼저 만드세요.</div></div>`; return; }
       list.innerHTML = items.map(t => `
         <div class="record-card">
           <div class="record-head">
             <span class="game-no">${t.name}${t.id === activeId ? ' <span class="badge-now">진행중</span>' : ''}</span>
-            <button class="btn ${t.id === activeId ? 'btn-ghost' : 'btn-primary'}" data-id="${t.id}" data-name="${t.name}" style="padding:8px 16px;">${t.id === activeId ? '선택됨' : '선택'}</button>
+            <span class="ed">
+              <button class="${t.id === activeId ? '' : 'sel'}" data-act="select" data-id="${t.id}" data-name="${t.name}" title="진행 대회로 선택">${t.id === activeId ? '✓' : '선택'}</button>
+              <button data-act="editmeta" data-id="${t.id}" title="정보 변경">변경</button>
+              <button class="del" data-act="del" data-id="${t.id}" title="대회 삭제">삭제</button>
+            </span>
           </div>
           <div class="meta-line">${t.startDate} ~ ${t.endDate} · ${ruleLabel(t)} · 정원 ${capacityLabel(t.capacity)}</div>
+          ${editId === t.id ? editPanel(t) : ''}
         </div>`).join('');
-
-      list.querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', async () => {
-        b.disabled = true;
-        try {
-          await setActiveTournament(b.dataset.id);
-          await refreshActive();
-          alert(`‘${b.dataset.name}’ 대회가 진행 상태로 설정되었습니다.`);
-          render(all);
-        } catch (e) { console.error(e); alert('설정 실패. Firebase 규칙을 확인해 주세요.'); b.disabled = false; }
-      }));
+      bind();
     }
 
-    (async () => { await refreshActive(); onTournaments(render); })();
+    function bind() {
+      list.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => handle(b.dataset.act, b.dataset.id, b.dataset.name)));
+    }
+
+    async function handle(act, id, name) {
+      if (act === 'select') {
+        try { await setActiveTournament(id); await refreshActive(); alert(`‘${name}’ 대회가 진행 상태로 설정되었습니다.`); render(); }
+        catch (e) { console.error(e); alert('설정 실패. Firebase 규칙을 확인해 주세요.'); }
+        return;
+      }
+      if (act === 'editmeta') { editId = (editId === id) ? null : id; render(); return; }
+      if (act === 'canceledit') { editId = null; render(); return; }
+      if (act === 'del') {
+        const t = all.find(x => x.id === id);
+        if (!confirm(`‘${t.name}’ 대회와 그 모든 경기 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
+        try { await deleteTournament(id); } catch (e) { console.error(e); alert('삭제 실패.'); }
+        return; // onTournaments가 갱신
+      }
+      if (act === 'savemeta') {
+        const get = f => list.querySelector(`[data-ef="${f}"]`);
+        const nm = get('name').value.trim();
+        const rule = get('rule').value;
+        const timed = get('timed').value === 'on';
+        const minutes = timed ? Number(get('minutes').value || 0) : null;
+        const teamCount = rule === 'team' ? Number(get('teamCount').value || 0) : null;
+        const capacity = Number(get('capacity').value);
+        const startDate = get('startDate').value;
+        const endDate = get('endDate').value;
+
+        if (!nm) { alert('대회명을 입력하세요.'); return; }
+        if (!startDate || !endDate) { alert('기간을 지정하세요.'); return; }
+        if (endDate < startDate) { alert('종료일이 시작일보다 빠를 수 없습니다.'); return; }
+        if (rule === 'team' && (!teamCount || teamCount <= 0)) { alert('팀 수를 입력하세요.'); return; }
+        if (timed && (!minutes || minutes <= 0)) { alert('시간제 분을 입력하세요.'); return; }
+
+        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, capacity, startDate, endDate }); editId = null; }
+        catch (e) { console.error(e); alert('저장 실패.'); }
+      }
+    }
+
+    (async () => { await refreshActive(); onTournaments(l => { all = l; render(); }); })();
   </script>
 </body>
 </html>

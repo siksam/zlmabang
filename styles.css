@@ -194,11 +194,12 @@ tfoot td.num { color: var(--ink); font-weight: 700; }
 label.field-label {
   display: none; /* 헤더로 대체 */
 }
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], input[type="date"] {
   width: 100%; font: inherit; padding: 11px 12px;
   border: 1px solid var(--line); border-radius: 10px; background: #fff;
   color: var(--ink);
 }
+input[type="date"] { width: auto; }
 input:focus-visible {
   outline: 2px solid var(--felt); outline-offset: 1px; border-color: var(--felt);
 }
@@ -299,13 +300,14 @@ input[type="number"] { text-align: right; }
 }
 .seg button.active { background: var(--felt); color: #F4F1E8; border-color: var(--felt); }
 
-/* E / D 버튼 */
-.ed { display: inline-flex; gap: 6px; }
+/* E / D 및 선택/변경/삭제 버튼 */
+.ed { display: inline-flex; gap: 6px; flex-wrap: wrap; }
 .ed button {
-  font: inherit; cursor: pointer; width: 32px; height: 32px; border-radius: 8px;
-  border: 1px solid var(--line); background: #fff; font-weight: 700; color: var(--ink);
+  font: inherit; cursor: pointer; min-width: 32px; height: 32px; padding: 0 10px;
+  border-radius: 8px; border: 1px solid var(--line); background: #fff; font-weight: 700; color: var(--ink);
 }
 .ed button.del { color: var(--accent); border-color: #e9c4be; }
+.ed button.sel { color: var(--felt); border-color: #bcd8cc; }
 .ed button:hover { background: #faf8f2; }
 
 /* 메타 줄 / 배지 */
@@ -322,3 +324,16 @@ input[type="number"] { text-align: right; }
 /* 인라인 편집 행 */
 .edit-row { display: grid; grid-template-columns: 96px 1fr 100px; gap: 8px; padding: 6px 8px; align-items: center; }
 .edit-row select, .edit-row input { font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+
+/* 인라인 숫자 입력 (분 / 팀 수) */
+.inline-num { display: flex; align-items: center; gap: 6px; }
+.inline-num input { width: 100px; }
+.inline-num span { color: var(--muted); font-size: 14px; }
+
+/* 대회 정보 변경 패널 */
+.edit-panel { border-top: 1px dashed var(--line); margin-top: 10px; padding-top: 8px; }
+.ef { display: flex; align-items: center; gap: 8px; padding: 6px 0; flex-wrap: wrap; }
+.ef > label { width: 78px; flex: none; font-size: 13px; color: var(--muted); font-weight: 600; }
+.ef select, .ef input {
+  font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+}

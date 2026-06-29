@@ -168,7 +168,9 @@ export function rankWithinGame(rows) {
 /* ---------- 표시용 헬퍼 ---------- */
 export function capacityLabel(c) { return (!c || c === 0) ? '무제한' : `${c}명`; }
 export function ruleLabel(t) {
-  const base = t.rule === 'team' ? '팀전' : '개인전';
+  const base = t.rule === 'team'
+    ? `팀전${t.teamCount ? ` (${t.teamCount}팀)` : ''}`
+    : '개인전';
   const time = t.timed ? `시간제 ${t.minutes || 0}분` : '시간제 없음';
   return `${base} · ${time}`;
 }
