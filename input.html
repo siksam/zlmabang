@@ -15,7 +15,7 @@
     <header class="topbar">
       <p class="eyebrow">東南西北 · 입력</p>
       <h1>점수입력</h1>
-      <p>좌석마다 아이디와 점수를 넣어주세요. 아이디는 직접 입력하거나 목록에서 고를 수 있습니다.</p>
+      <p>한 경기의 결과를 넣어주세요. 저장하면 기존 기록에 새 경기로 추가됩니다.</p>
     </header>
 
     <section class="card">
@@ -29,12 +29,11 @@
       </div>
     </section>
 
-    <!-- 아이디 후보 목록 (직접 입력 + 드롭다운 겸용) -->
     <datalist id="player-list"></datalist>
 
     <p class="note">
       아이디 목록은 관리자가 관리합니다(Firestore의 <code>config/players</code>).
-      다음 단계에서 관리자 페이지로 추가·삭제할 수 있게 만들 예정입니다.
+      칸에 직접 입력하거나 목록에서 골라도 됩니다.
     </p>
 
     <div class="actions">
@@ -44,7 +43,7 @@
   </main>
 
   <script type="module">
-    import { SEATS, getScoresOnce, getPlayersOnce, saveScores } from './store.js';
+    import { SEATS, emptyRows, getPlayersOnce, addGame } from './store.js';
 
     const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
     const rowsEl = document.getElementById('rows');
@@ -55,20 +54,19 @@
         players.map(name => `<option value="${name}"></option>`).join('');
     }
 
-    function buildRows(prev) {
+    function buildRows() {
+      const blank = emptyRows();
       rowsEl.innerHTML = SEATS.map((seat, i) => {
-        const p = prev[i] || { id: '', score: null };
         const cls = SEAT_CLS[seat.pos];
-        const scoreVal = (p.score === null || p.score === '') ? '' : p.score;
         return `
           <div class="form-row">
             <span class="seat-badge seat-${cls}">
               <span class="han">${seat.hanja}</span>${seat.pos}
             </span>
             <input type="text" list="player-list" placeholder="아이디 입력 또는 선택"
-                   data-role="id" value="${p.id || ''}" />
+                   data-role="id" value="" />
             <input type="number" placeholder="점수" inputmode="numeric"
-                   data-role="score" value="${scoreVal}" />
+                   data-role="score" value="" />
           </div>`;
       }).join('');
     }
@@ -91,7 +89,7 @@
       saveBtn.disabled = true;
       saveBtn.textContent = '저장 중…';
       try {
-        await saveScores(result);
+        await addGame(result);
         window.location.href = 'index.html';
       } catch (e) {
         console.error(e);
@@ -101,16 +99,13 @@
       }
     }
 
-    // 초기화: 아이디 목록 + 이전 점수 불러오기
     (async () => {
       try {
-        const [players, prev] = await Promise.all([getPlayersOnce(), getScoresOnce()]);
-        fillDatalist(players);
-        buildRows(prev);
+        fillDatalist(await getPlayersOnce());
       } catch (e) {
         console.error(e);
-        rowsEl.innerHTML = '<div class="empty">불러오기에 실패했습니다. Firebase 설정을 확인해 주세요.</div>';
       }
+      buildRows();
       saveBtn.addEventListener('click', save);
     })();
   </script>

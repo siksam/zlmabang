@@ -13,9 +13,9 @@
 <body>
   <main class="wrap">
     <header class="topbar">
-      <p class="eyebrow">東南西北 · 점수판</p>
+      <p class="eyebrow">東南西北 · 누적 점수판</p>
       <h1>마작 점수판</h1>
-      <p>실시간 공유 결과입니다. 누가 점수를 저장하면 이 화면에 바로 반영됩니다.</p>
+      <p>모든 경기를 합산한 누적 순위입니다. 점수를 저장하면 실시간으로 반영됩니다.</p>
       <div class="tiles" aria-hidden="true">
         <span class="tile east">東</span>
         <span class="tile south">南</span>
@@ -26,7 +26,7 @@
 
     <section class="card">
       <div class="card-head">
-        <h2>결과</h2>
+        <h2>누적 순위</h2>
         <span class="hint" id="status">불러오는 중…</span>
       </div>
       <div id="board">
@@ -36,83 +36,74 @@
 
     <div class="actions">
       <a class="btn btn-primary" href="input.html">＋ 점수입력</a>
+      <a class="btn btn-ghost" href="records.html">기록확인</a>
     </div>
+
+    <!-- 관리자 진입 -->
+    <div class="admin-gate">
+      <input type="password" id="admin-pw" placeholder="관리자 비밀번호" autocomplete="off" />
+      <button class="btn btn-ghost" id="admin-enter">입장</button>
+    </div>
+    <p class="admin-note">관리자만 입장하세요.</p>
   </main>
 
   <script type="module">
-    import { onScores, computeRanks } from './store.js';
-
-    const SEAT_META = {
-      '동': { han: '東', cls: 'east'  },
-      '남': { han: '南', cls: 'south' },
-      '서': { han: '西', cls: 'west'  },
-      '북': { han: '北', cls: 'north' },
-    };
+    import { onGames, computeStandings, checkAdminPassword } from './store.js';
 
     const board  = document.getElementById('board');
     const status = document.getElementById('status');
 
-    function hasAnyScore(rows) {
-      return rows.some(r => r.score !== null && r.score !== '');
-    }
-
-    function render(rows) {
+    function render(games) {
       status.textContent = '실시간 연결됨';
+      const standings = computeStandings(games);
 
-      if (!hasAnyScore(rows)) {
+      if (standings.length === 0) {
         board.innerHTML = `
           <div class="empty">
-            <strong>아직 입력된 점수가 없어요</strong>
-            아래 ‘점수입력’을 눌러 4명의 점수를 등록하세요.
+            <strong>아직 기록이 없어요</strong>
+            ‘점수입력’을 눌러 첫 경기를 등록하세요.
           </div>`;
         return;
       }
 
-      const ranks = computeRanks(rows);
-      const total = rows.reduce((s, r) =>
-        s + (r.score === null || r.score === '' ? 0 : Number(r.score)), 0);
-
-      const body = rows.map(r => {
-        const meta = SEAT_META[r.pos] || { han: '', cls: '' };
-        const rank = ranks.get(r);
-        const rankHtml = rank
-          ? `<span class="rank r${rank}">${rank}</span>`
-          : '<span class="rank">–</span>';
-        const id = r.id ? r.id : '<span class="id-empty">미입력</span>';
-        const score = (r.score === null || r.score === '')
-          ? '<span class="id-empty">–</span>'
-          : Number(r.score).toLocaleString('ko-KR');
-        return `
-          <tr>
-            <td>${rankHtml}</td>
-            <td><span class="seat seat-${meta.cls}"><span class="dot"></span>${meta.han} ${r.pos}</span></td>
-            <td>${id}</td>
-            <td class="num">${score}</td>
-          </tr>`;
-      }).join('');
+      const body = standings.map(e => `
+        <tr>
+          <td><span class="rank r${e.rank <= 3 ? e.rank : ''}">${e.rank}</span></td>
+          <td>${e.id}</td>
+          <td class="num">${e.total.toLocaleString('ko-KR')}</td>
+          <td class="num">${e.count}</td>
+        </tr>`).join('');
 
       board.innerHTML = `
         <table>
           <thead>
             <tr>
               <th style="width:56px">순위</th>
-              <th>위치</th>
               <th>아이디</th>
-              <th class="num">점수</th>
+              <th class="num">총점</th>
+              <th class="num">국수</th>
             </tr>
           </thead>
           <tbody>${body}</tbody>
-          <tfoot>
-            <tr>
-              <td colspan="3">합계</td>
-              <td class="num">${total.toLocaleString('ko-KR')}</td>
-            </tr>
-          </tfoot>
         </table>`;
     }
 
-    // 실시간 구독 시작
-    onScores(render);
+    onGames(render);
+
+    // 관리자 진입
+    const pw = document.getElementById('admin-pw');
+    function enterAdmin() {
+      if (checkAdminPassword(pw.value)) {
+        sessionStorage.setItem('admin_ok', '1');
+        window.location.href = 'admin.html';
+      } else {
+        alert('비밀번호가 올바르지 않습니다.');
+        pw.value = '';
+        pw.focus();
+      }
+    }
+    document.getElementById('admin-enter').addEventListener('click', enterAdmin);
+    pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') enterAdmin(); });
   </script>
 </body>
 </html>

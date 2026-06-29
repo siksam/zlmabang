@@ -229,3 +229,43 @@ input[type="number"] { text-align: right; }
   .form-row, .col-head { grid-template-columns: 64px 1fr 100px; gap: 8px; }
   .topbar h1 { font-size: 24px; }
 }
+
+/* =========================================================
+   추가: 관리자 진입 / 기록확인 카드 (누적 버전)
+   ========================================================= */
+
+/* 관리자 진입 */
+.admin-gate {
+  margin-top: 40px;
+  display: flex; gap: 8px; align-items: center; justify-content: center;
+}
+.admin-gate input {
+  max-width: 220px;
+}
+.admin-gate .btn { padding: 11px 18px; }
+.admin-note {
+  text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px;
+}
+
+/* 기록확인 카드 */
+.record-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+.record-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 6px;
+}
+.record-head .game-no { font-weight: 700; }
+.record-head .when { font-size: 12px; color: var(--muted); }
+
+.mini { width: 100%; border-collapse: collapse; }
+.mini td {
+  padding: 8px; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.mini tr:last-child td { border-bottom: none; }
+.mini td.num { text-align: right; font-variant-numeric: tabular-nums; }

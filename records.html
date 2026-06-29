@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>기록확인 · 마작 점수판</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 기록</p>
+      <h1>기록확인</h1>
+      <p>저장된 경기들을 최신순으로 보여줍니다.</p>
+    </header>
+
+    <section id="list">
+      <div class="card"><div class="empty">불러오는 중…</div></div>
+    </section>
+
+    <div class="actions">
+      <a class="btn btn-ghost" href="index.html">돌아가기</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { onGames, rankWithinGame } from './store.js';
+
+    const SEAT_META = {
+      '동': { han: '東', cls: 'east'  },
+      '남': { han: '南', cls: 'south' },
+      '서': { han: '西', cls: 'west'  },
+      '북': { han: '北', cls: 'north' },
+    };
+    const list = document.getElementById('list');
+
+    function fmtTime(ts) {
+      try {
+        const d = ts && ts.toDate ? ts.toDate() : null;
+        if (!d) return '방금';
+        return d.toLocaleString('ko-KR', {
+          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+      } catch (e) { return ''; }
+    }
+
+    function render(games) {
+      if (games.length === 0) {
+        list.innerHTML = `<div class="card"><div class="empty">
+          <strong>아직 기록이 없어요</strong>저장된 경기가 없습니다.</div></div>`;
+        return;
+      }
+
+      const total = games.length;
+      list.innerHTML = games.map((g, idx) => {
+        const ranks = rankWithinGame(g.rows);
+        const rowsHtml = g.rows.map(r => {
+          const meta = SEAT_META[r.pos] || { han: '', cls: '' };
+          const rank = ranks.get(r);
+          const rankHtml = rank ? `<span class="rank r${rank<=3?rank:''}">${rank}</span>` : '–';
+          const id = r.id ? r.id : '<span class="id-empty">미입력</span>';
+          const score = (r.score === null || r.score === '')
+            ? '<span class="id-empty">–</span>'
+            : Number(r.score).toLocaleString('ko-KR');
+          return `<tr>
+            <td style="width:44px">${rankHtml}</td>
+            <td><span class="seat seat-${meta.cls}"><span class="dot"></span>${meta.han} ${r.pos}</span></td>
+            <td>${id}</td>
+            <td class="num">${score}</td>
+          </tr>`;
+        }).join('');
+
+        return `
+          <div class="record-card">
+            <div class="record-head">
+              <span class="game-no">${total - idx}번째 경기</span>
+              <span class="when">${fmtTime(g.createdAt)}</span>
+            </div>
+            <table class="mini">
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>`;
+      }).join('');
+    }
+
+    onGames(render);
+  </script>
+</body>
+</html>

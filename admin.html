@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리자 · 마작 점수판</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">東南西北 · 관리자</p>
+      <h1>관리자 페이지</h1>
+      <p>관리자 전용 영역입니다.</p>
+    </header>
+
+    <!-- 비밀번호 게이트 (직접 주소로 들어와도 막힘) -->
+    <section class="card" id="gate">
+      <div class="card-head"><h2>관리자 확인</h2></div>
+      <div class="form-row" style="grid-template-columns: 1fr 120px;">
+        <input type="password" id="gate-pw" placeholder="관리자 비밀번호" autocomplete="off" />
+        <button class="btn btn-primary" id="gate-enter">입장</button>
+      </div>
+    </section>
+
+    <!-- 관리자 본문 (인증 후 표시) -->
+    <section class="card" id="panel" style="display:none;">
+      <div class="card-head"><h2>관리 메뉴</h2></div>
+      <div class="empty">
+        <strong>준비 중입니다</strong>
+        다음 단계에서 아이디 목록 관리, 기록 관리 등을 여기에 추가할 예정입니다.
+      </div>
+    </section>
+
+    <div class="actions">
+      <a class="btn btn-ghost" href="index.html">점수판으로</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { checkAdminPassword } from './store.js';
+
+    const gate  = document.getElementById('gate');
+    const panel = document.getElementById('panel');
+
+    function showPanel() {
+      gate.style.display = 'none';
+      panel.style.display = 'block';
+    }
+
+    // 이미 입장한 세션이면 바로 본문
+    if (sessionStorage.getItem('admin_ok') === '1') {
+      showPanel();
+    }
+
+    const pw = document.getElementById('gate-pw');
+    function enter() {
+      if (checkAdminPassword(pw.value)) {
+        sessionStorage.setItem('admin_ok', '1');
+        showPanel();
+      } else {
+        alert('비밀번호가 올바르지 않습니다.');
+        pw.value = '';
+        pw.focus();
+      }
+    }
+    document.getElementById('gate-enter').addEventListener('click', enter);
+    pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') enter(); });
+  </script>
+</body>
+</html>
