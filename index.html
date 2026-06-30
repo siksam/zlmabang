@@ -22,7 +22,7 @@
       </div>
     </header>
 
-    <!-- 타이머: 시간제 대회일 때만 표시 -->
+    <!-- 타이머: 관리자 모드 + 시간제 대회일 때만 표시 -->
     <section class="card timer-card" id="timer-card" style="display:none;">
       <div class="timer-display" id="timer-display">00:00</div>
       <div class="timer-btns">
@@ -47,11 +47,18 @@
       <a class="btn btn-ghost" href="records.html">기록확인</a>
     </div>
 
-    <div class="admin-gate">
+    <!-- 관리자 확인 (잠김) -->
+    <div class="admin-gate" id="gate-locked">
       <input type="password" id="admin-pw" placeholder="관리자 비밀번호" autocomplete="off" />
       <button class="btn btn-ghost" id="admin-enter">입장</button>
     </div>
-    <p class="admin-note">관리자만 입장하세요.</p>
+    <!-- 관리자 확인됨 (잠금해제) -->
+    <div class="admin-bar" id="gate-unlocked" style="display:none;">
+      <span class="admin-badge">✓ 관리자 확인됨</span>
+      <a class="btn btn-primary" href="admin.html">관리자 페이지로 이동</a>
+      <button class="btn btn-ghost" id="admin-logout">관리자 해제</button>
+    </div>
+    <p class="admin-note" id="admin-note">관리자만 입장하세요.</p>
   </main>
 
   <script type="module">
@@ -59,7 +66,6 @@
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
-    // 13컬럼 공통 폭: 순위 아이디 팀 팀내 승점 승점차 평균 1 2 3 4 평순 국수
     const COLS = [44,76,56,46,60,56,56,36,36,36,36,48,44];
     const COLGROUP = `<colgroup>${COLS.map(w => `<col style="width:${w}px">`).join('')}</colgroup>`;
 
@@ -69,12 +75,12 @@
     const status  = document.getElementById('status');
     const legend  = document.getElementById('legend');
     let gamesUnsub = null;
+    let currentT = null;
 
     const rankCell = r => `<td><span class="rank r${r <= 3 ? r : ''}">${r}</span></td>`;
     const placeCells = e => `<td class="c1">${e.p1}</td><td>${e.p2}</td><td>${e.p3}</td><td class="c4">${e.p4}</td>`;
     const gapCell = g => `<td>${g == null ? '-' : fmt1(g)}</td>`;
 
-    // 팀전: 팀+개인을 하나의 표로(컬럼 정렬 일치)
     function teamModeTable(teams, standings, info, colorMap) {
       const teamHead = `<tr class="hrow">
         <th>순위</th><th class="tl" colspan="3">팀</th><th>승점</th><th>승점차</th><th>평균</th>
@@ -83,7 +89,6 @@
         ${rankCell(e.rank)}<td class="tl" colspan="3">${e.team}</td>
         <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
         ${placeCells(e)}<td></td><td>${e.count}</td></tr>`).join('');
-
       const indHead = `<tr class="hrow">
         <th>순위</th><th class="tl">아이디</th><th class="tl">팀</th><th>팀내</th><th>승점</th><th>승점차</th><th>평균</th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
@@ -96,14 +101,12 @@
           <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
           ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`;
       }).join('');
-
       return `<div class="tscroll"><table class="stats fixed">${COLGROUP}<tbody>
         <tr class="secrow"><td colspan="13">팀 순위</td></tr>${teamHead}${teamRows}
         <tr class="secrow"><td colspan="13">개인 순위</td></tr>${indHead}${indRows}
       </tbody></table></div>`;
     }
 
-    // 개인전: 팀 컬럼 없는 표
     function soloTable(standings) {
       const head = `<tr class="hrow"><th>순위</th><th class="tl">아이디</th><th>승점</th><th>승점차</th><th>평균</th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
@@ -134,15 +137,14 @@
       }
     }
 
-    /* ---------- 타이머 + 알람음 ---------- */
-    const timerCard = document.getElementById('timer-card');
-    const display   = document.getElementById('timer-display');
-    const timerNote = document.getElementById('timer-note');
+    /* ---------- 오디오 ---------- */
     let audioCtx = null;
     function ensureAudio() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
     }
+    // 새로고침 후 첫 상호작용에 소리 잠금 해제
+    ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, ensureAudio));
     function beep(freq = 880, dur = 250, type = 'sine') {
       ensureAudio();
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -155,45 +157,101 @@
     }
     function endAlarm() { [0, 350, 700, 1050].forEach(d => setTimeout(() => beep(660, 300, 'square'), d)); }
 
-    const timer = { total: 0, remaining: 0, iv: null, fired: new Set(), alarms: [] };
+    /* ---------- 타이머 (새로고침 유지) ---------- */
+    const timerCard = document.getElementById('timer-card');
+    const display   = document.getElementById('timer-display');
+    const timerNote = document.getElementById('timer-note');
     const fmtClock = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    const TKEY = tid => `mahjong_timer_${tid}`;
+    let timer = null, timerIv = null;
 
-    function setupTimer(t) {
-      if (timer.iv) { clearInterval(timer.iv); timer.iv = null; }
-      if (!t || !t.timed) { timerCard.style.display = 'none'; return; }
-      timerCard.style.display = 'block';
-      timer.total = (t.minutes || 0) * 60;
-      timer.remaining = timer.total;
-      timer.alarms = (t.alarms || []).map(a => a * 60);  // '분 전' → 남은 초
-      timer.fired = new Set();
+    function saveTimer() {
+      if (!timer) return;
+      localStorage.setItem(TKEY(timer.tid), JSON.stringify({
+        total: timer.total, remaining: timer.remaining, running: timer.running,
+        endAt: timer.endAt, fired: [...timer.fired], ended: timer.ended,
+      }));
+    }
+    function loadTimer(tid, total, alarms) {
+      let s = null;
+      try { const raw = localStorage.getItem(TKEY(tid)); if (raw) s = JSON.parse(raw); } catch (e) {}
+      if (!s || s.total !== total) {
+        timer = { tid, total, remaining: total, running: false, endAt: null, fired: new Set(), ended: false, alarms };
+      } else {
+        timer = { tid, total: s.total, remaining: s.remaining, running: s.running, endAt: s.endAt,
+                  fired: new Set(s.fired || []), ended: !!s.ended, alarms };
+        if (timer.running && timer.endAt) timer.remaining = Math.max(0, Math.round((timer.endAt - Date.now()) / 1000));
+      }
+    }
+    function renderTimer() {
+      if (!timer) return;
       display.textContent = fmtClock(timer.remaining);
-      timerNote.textContent = (t.alarms && t.alarms.length)
-        ? `알람: 종료 ${[...t.alarms].sort((a,b)=>b-a).join('·')}분 전`
+      timerNote.textContent = timer.alarms.length
+        ? `알람: 종료 ${[...timer.alarms].map(s => s / 60).sort((a, b) => b - a).join('·')}분 전`
         : '알람 없음';
     }
-    function tick() {
-      if (timer.remaining <= 0) return;
-      timer.remaining--;
-      display.textContent = fmtClock(timer.remaining);
-      if (timer.alarms.includes(timer.remaining) && !timer.fired.has(timer.remaining)) {
-        timer.fired.add(timer.remaining); beep(880, 250);
+    function tickTimer() {
+      if (!timer || !timer.running) return;
+      timer.remaining = Math.max(0, Math.round((timer.endAt - Date.now()) / 1000));
+      for (const a of timer.alarms) {
+        if (timer.remaining <= a && !timer.fired.has(a)) { timer.fired.add(a); beep(880, 250); saveTimer(); }
       }
-      if (timer.remaining <= 0) { clearInterval(timer.iv); timer.iv = null; endAlarm(); }
+      if (timer.remaining <= 0 && !timer.ended) {
+        timer.ended = true; timer.running = false; timer.endAt = null; endAlarm(); saveTimer();
+      }
+      renderTimer();
+    }
+    function setupTimer(t) {
+      const isAdmin = sessionStorage.getItem('admin_ok') === '1';
+      if (timerIv) { clearInterval(timerIv); timerIv = null; }
+      if (!isAdmin || !t || !t.timed) { timerCard.style.display = 'none'; timer = null; return; }
+      timerCard.style.display = 'block';
+      loadTimer(t.id, (t.minutes || 0) * 60, (t.alarms || []).map(a => a * 60));
+      renderTimer();
+      timerIv = setInterval(tickTimer, 250);
     }
     document.getElementById('t-start').addEventListener('click', () => {
       ensureAudio();
-      if (timer.iv) return;
-      if (timer.remaining <= 0) { timer.remaining = timer.total; timer.fired = new Set(); }
-      timer.iv = setInterval(tick, 1000);
+      if (!timer || timer.running) return;
+      if (timer.remaining <= 0) { timer.remaining = timer.total; timer.fired = new Set(); timer.ended = false; }
+      timer.running = true; timer.endAt = Date.now() + timer.remaining * 1000;
+      saveTimer(); renderTimer();
     });
-    document.getElementById('t-pause').addEventListener('click', () => { if (timer.iv) { clearInterval(timer.iv); timer.iv = null; } });
+    document.getElementById('t-pause').addEventListener('click', () => {
+      if (!timer || !timer.running) return;
+      timer.remaining = Math.max(0, Math.round((timer.endAt - Date.now()) / 1000));
+      timer.running = false; timer.endAt = null; saveTimer(); renderTimer();
+    });
     document.getElementById('t-reset').addEventListener('click', () => {
-      if (timer.iv) { clearInterval(timer.iv); timer.iv = null; }
-      timer.remaining = timer.total; timer.fired = new Set();
-      display.textContent = fmtClock(timer.remaining);
+      if (!timer) return;
+      timer.running = false; timer.endAt = null; timer.remaining = timer.total;
+      timer.fired = new Set(); timer.ended = false; saveTimer(); renderTimer();
     });
 
+    /* ---------- 관리자 확인 UI ---------- */
+    const gateLocked = document.getElementById('gate-locked');
+    const gateUnlocked = document.getElementById('gate-unlocked');
+    const adminNote = document.getElementById('admin-note');
+    const pw = document.getElementById('admin-pw');
+
+    function applyAdminUI() {
+      const isAdmin = sessionStorage.getItem('admin_ok') === '1';
+      gateLocked.style.display = isAdmin ? 'none' : 'flex';
+      gateUnlocked.style.display = isAdmin ? 'flex' : 'none';
+      adminNote.textContent = isAdmin ? '관리자 모드 — 타이머가 표시됩니다.' : '관리자만 입장하세요.';
+      setupTimer(currentT);
+    }
+    function enterAdmin() {
+      if (checkAdminPassword(pw.value)) { sessionStorage.setItem('admin_ok', '1'); pw.value = ''; applyAdminUI(); }
+      else { alert('비밀번호가 올바르지 않습니다.'); pw.value = ''; pw.focus(); }
+    }
+    document.getElementById('admin-enter').addEventListener('click', enterAdmin);
+    pw.addEventListener('keydown', e => { if (e.key === 'Enter') enterAdmin(); });
+    document.getElementById('admin-logout').addEventListener('click', () => { sessionStorage.removeItem('admin_ok'); applyAdminUI(); });
+
+    /* ---------- 대회 구독 ---------- */
     onActiveTournament(t => {
+      currentT = t;
       if (gamesUnsub) { gamesUnsub(); gamesUnsub = null; }
       setupTimer(t);
       if (!t) {
@@ -208,13 +266,7 @@
       gamesUnsub = onGamesByTournament(t.id, games => renderAll(games, t));
     });
 
-    const pw = document.getElementById('admin-pw');
-    function enterAdmin() {
-      if (checkAdminPassword(pw.value)) { sessionStorage.setItem('admin_ok', '1'); window.location.href = 'admin.html'; }
-      else { alert('비밀번호가 올바르지 않습니다.'); pw.value = ''; pw.focus(); }
-    }
-    document.getElementById('admin-enter').addEventListener('click', enterAdmin);
-    pw.addEventListener('keydown', e => { if (e.key === 'Enter') enterAdmin(); });
+    applyAdminUI();
   </script>
 </body>
 </html>
