@@ -376,3 +376,25 @@ input[type="number"] { text-align: right; }
   background: #fff; color: var(--accent); font-weight: 700; cursor: pointer; line-height: 1;
 }
 .alarm-del:hover { background: #fdf3f1; }
+
+/* 합쳐진 순위표: 고정 폭 + 섹션/헤더 행 */
+.stats.fixed { table-layout: fixed; min-width: 630px; }
+.stats .secrow td {
+  font-weight: 700; font-size: 14px; text-align: left; color: var(--ink);
+  padding: 14px 8px 4px; border-bottom: none;
+}
+.stats .hrow th { border-bottom: 1px solid var(--line); }
+.stats .hrow th:empty { border-bottom: 1px solid var(--line); }
+
+/* 타이머 */
+.timer-card { text-align: center; padding: 18px 16px 16px; }
+.timer-display {
+  font-family: 'Noto Serif KR', serif; font-weight: 700;
+  font-size: 46px; letter-spacing: 2px; font-variant-numeric: tabular-nums; color: var(--felt-deep);
+}
+.timer-btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.timer-btns .btn { padding: 10px 18px; }
+.timer-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+/* 알람 입력칸 폭(인라인과 함께) */
+.alarm-row input { width: 80px; }

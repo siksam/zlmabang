@@ -22,6 +22,17 @@
       </div>
     </header>
 
+    <!-- 타이머: 시간제 대회일 때만 표시 -->
+    <section class="card timer-card" id="timer-card" style="display:none;">
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-btns">
+        <button class="btn btn-primary" id="t-start">시작</button>
+        <button class="btn btn-ghost" id="t-pause">일시정지</button>
+        <button class="btn btn-ghost" id="t-reset">리셋</button>
+      </div>
+      <p class="timer-note" id="timer-note"></p>
+    </section>
+
     <section class="card">
       <div class="card-head">
         <h2>순위</h2>
@@ -48,6 +59,9 @@
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
+    // 13컬럼 공통 폭: 순위 아이디 팀 팀내 승점 승점차 평균 1 2 3 4 평순 국수
+    const COLS = [44,76,56,46,60,56,56,36,36,36,36,48,44];
+    const COLGROUP = `<colgroup>${COLS.map(w => `<col style="width:${w}px">`).join('')}</colgroup>`;
 
     const titleEl = document.getElementById('title');
     const subEl   = document.getElementById('subtitle');
@@ -60,34 +74,44 @@
     const placeCells = e => `<td class="c1">${e.p1}</td><td>${e.p2}</td><td>${e.p3}</td><td class="c4">${e.p4}</td>`;
     const gapCell = g => `<td>${g == null ? '-' : fmt1(g)}</td>`;
 
-    function teamTable(teams, colorMap) {
-      const head = `<tr><th>순위</th><th class="tl">팀</th><th>승점</th><th>승점차</th><th>평균</th>
-        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>국수</th></tr>`;
-      const body = teams.map(e => `<tr style="background:${colorMap[e.team] || 'transparent'}">
-        ${rankCell(e.rank)}<td class="tl">${e.team}</td>
+    // 팀전: 팀+개인을 하나의 표로(컬럼 정렬 일치)
+    function teamModeTable(teams, standings, info, colorMap) {
+      const teamHead = `<tr class="hrow">
+        <th>순위</th><th class="tl" colspan="3">팀</th><th>승점</th><th>승점차</th><th>평균</th>
+        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th></th><th>국수</th></tr>`;
+      const teamRows = teams.map(e => `<tr style="background:${colorMap[e.team] || 'transparent'}">
+        ${rankCell(e.rank)}<td class="tl" colspan="3">${e.team}</td>
         <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
-        ${placeCells(e)}<td>${e.count}</td></tr>`).join('');
-      return `<div class="tscroll"><table class="stats"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
-    }
+        ${placeCells(e)}<td></td><td>${e.count}</td></tr>`).join('');
 
-    function indivTable(standings, teamInfo, colorMap) {
-      const teamMode = !!teamInfo;
-      const head = `<tr><th>순위</th><th class="tl">아이디</th>
-        ${teamMode ? '<th class="tl">팀</th><th>팀내</th>' : ''}
-        <th>승점</th><th>승점차</th><th>평균</th>
+      const indHead = `<tr class="hrow">
+        <th>순위</th><th class="tl">아이디</th><th class="tl">팀</th><th>팀내</th><th>승점</th><th>승점차</th><th>평균</th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
-      const body = standings.map(e => {
-        const ti = teamMode ? teamInfo[e.id] : null;
-        const bg = teamMode ? (colorMap[ti ? ti.team : '(미지정)'] || 'transparent') : 'transparent';
-        const teamCols = teamMode
-          ? `<td class="tl">${ti ? ti.team : '(미지정)'}</td><td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>`
-          : '';
+      const indRows = standings.map(e => {
+        const ti = info[e.id];
+        const bg = colorMap[ti ? ti.team : '(미지정)'] || 'transparent';
         return `<tr style="background:${bg}">
-          ${rankCell(e.rank)}<td class="tl">${e.id}</td>${teamCols}
+          ${rankCell(e.rank)}<td class="tl">${e.id}</td>
+          <td class="tl">${ti ? ti.team : '(미지정)'}</td><td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>
           <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
           ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`;
       }).join('');
-      return `<div class="tscroll"><table class="stats"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+
+      return `<div class="tscroll"><table class="stats fixed">${COLGROUP}<tbody>
+        <tr class="secrow"><td colspan="13">팀 순위</td></tr>${teamHead}${teamRows}
+        <tr class="secrow"><td colspan="13">개인 순위</td></tr>${indHead}${indRows}
+      </tbody></table></div>`;
+    }
+
+    // 개인전: 팀 컬럼 없는 표
+    function soloTable(standings) {
+      const head = `<tr class="hrow"><th>순위</th><th class="tl">아이디</th><th>승점</th><th>승점차</th><th>평균</th>
+        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
+      const rows = standings.map(e => `<tr>
+        ${rankCell(e.rank)}<td class="tl">${e.id}</td>
+        <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
+        ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`).join('');
+      return `<div class="tscroll"><table class="stats"><tbody>${head}${rows}</tbody></table></div>`;
     }
 
     function renderAll(games, t) {
@@ -99,22 +123,79 @@
         return;
       }
       legend.style.display = 'block';
-      let html = '';
       if (t.rule === 'team') {
         const teams = computeTeamStandings(standings, t.participants);
         const info = computeTeamInfo(standings, t.participants);
         const colorMap = {};
         teams.forEach((tm, i) => { colorMap[tm.team] = TEAM_BG[i % TEAM_BG.length]; });
-        html += `<div class="subhead">팀 순위</div>` + teamTable(teams, colorMap);
-        html += `<div class="subhead">개인 순위</div>` + indivTable(standings, info, colorMap);
+        board.innerHTML = teamModeTable(teams, standings, info, colorMap);
       } else {
-        html += indivTable(standings, null, null);
+        board.innerHTML = soloTable(standings);
       }
-      board.innerHTML = html;
     }
+
+    /* ---------- 타이머 + 알람음 ---------- */
+    const timerCard = document.getElementById('timer-card');
+    const display   = document.getElementById('timer-display');
+    const timerNote = document.getElementById('timer-note');
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+    function beep(freq = 880, dur = 250, type = 'sine') {
+      ensureAudio();
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq; o.connect(g); g.connect(audioCtx.destination);
+      const now = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + dur / 1000);
+      o.start(now); o.stop(now + dur / 1000);
+    }
+    function endAlarm() { [0, 350, 700, 1050].forEach(d => setTimeout(() => beep(660, 300, 'square'), d)); }
+
+    const timer = { total: 0, remaining: 0, iv: null, fired: new Set(), alarms: [] };
+    const fmtClock = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+    function setupTimer(t) {
+      if (timer.iv) { clearInterval(timer.iv); timer.iv = null; }
+      if (!t || !t.timed) { timerCard.style.display = 'none'; return; }
+      timerCard.style.display = 'block';
+      timer.total = (t.minutes || 0) * 60;
+      timer.remaining = timer.total;
+      timer.alarms = (t.alarms || []).map(a => a * 60);  // '분 전' → 남은 초
+      timer.fired = new Set();
+      display.textContent = fmtClock(timer.remaining);
+      timerNote.textContent = (t.alarms && t.alarms.length)
+        ? `알람: 종료 ${[...t.alarms].sort((a,b)=>b-a).join('·')}분 전`
+        : '알람 없음';
+    }
+    function tick() {
+      if (timer.remaining <= 0) return;
+      timer.remaining--;
+      display.textContent = fmtClock(timer.remaining);
+      if (timer.alarms.includes(timer.remaining) && !timer.fired.has(timer.remaining)) {
+        timer.fired.add(timer.remaining); beep(880, 250);
+      }
+      if (timer.remaining <= 0) { clearInterval(timer.iv); timer.iv = null; endAlarm(); }
+    }
+    document.getElementById('t-start').addEventListener('click', () => {
+      ensureAudio();
+      if (timer.iv) return;
+      if (timer.remaining <= 0) { timer.remaining = timer.total; timer.fired = new Set(); }
+      timer.iv = setInterval(tick, 1000);
+    });
+    document.getElementById('t-pause').addEventListener('click', () => { if (timer.iv) { clearInterval(timer.iv); timer.iv = null; } });
+    document.getElementById('t-reset').addEventListener('click', () => {
+      if (timer.iv) { clearInterval(timer.iv); timer.iv = null; }
+      timer.remaining = timer.total; timer.fired = new Set();
+      display.textContent = fmtClock(timer.remaining);
+    });
 
     onActiveTournament(t => {
       if (gamesUnsub) { gamesUnsub(); gamesUnsub = null; }
+      setupTimer(t);
       if (!t) {
         titleEl.textContent = DEFAULT_TITLE; document.title = DEFAULT_TITLE;
         subEl.textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';

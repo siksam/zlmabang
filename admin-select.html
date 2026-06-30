@@ -34,7 +34,7 @@
 
     async function refreshActive() { activeId = await getActiveTournamentId(); }
 
-    const alarmRowHtml = v => `<div class="alarm-row"><input type="number" class="alarm-min" value="${v}" placeholder="분"><span>분 전</span><button type="button" class="alarm-del">×</button></div>`;
+    const alarmRowHtml = v => `<div class="alarm-row"><input type="number" class="alarm-min" value="${v}" placeholder="분" style="width:80px;"><span>분 전</span><button type="button" class="alarm-del">×</button></div>`;
 
     function editPanel(t) {
       const alarms = Array.isArray(t.alarms) ? t.alarms : [];
@@ -119,7 +119,7 @@
       if (addBtn && rows) addBtn.addEventListener('click', () => {
         const div = document.createElement('div');
         div.className = 'alarm-row';
-        div.innerHTML = `<input type="number" class="alarm-min" placeholder="분"><span>분 전</span><button type="button" class="alarm-del">×</button>`;
+        div.innerHTML = `<input type="number" class="alarm-min" placeholder="분" style="width:80px;"><span>분 전</span><button type="button" class="alarm-del">×</button>`;
         div.querySelector('.alarm-del').addEventListener('click', () => div.remove());
         rows.appendChild(div);
       });
