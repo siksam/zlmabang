@@ -59,7 +59,7 @@
               <button data-act="edit" data-id="${t.id}" title="이름/기록 수정">E</button>
               <button class="del" data-act="del" data-id="${t.id}" title="대회 삭제">D</button></span>
           </div>
-          <div class="meta-line">${t.startDate} ~ ${t.endDate} · ${ruleLabel(t)} · 정원 ${capacityLabel(t.capacity)}</div>
+          <div class="meta-line">${t.startDate} ~ ${t.endDate} · ${ruleLabel(t)}</div>
           ${editHtml}${standHtml}
         </div>`;
       }).join('');

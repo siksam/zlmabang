@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>마작 점수판</title>
+  <title>대회 기록 입력 사이트</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
   <main class="wrap">
     <header class="topbar">
       <p class="eyebrow">東南西北 · 누적 점수판</p>
-      <h1 id="title">마작 점수판</h1>
+      <h1 id="title">대회 기록 입력 사이트</h1>
       <p id="subtitle">진행 중인 대회를 불러오는 중…</p>
       <div class="tiles" aria-hidden="true">
         <span class="tile east">東</span><span class="tile south">南</span>
@@ -46,6 +46,9 @@
   <script type="module">
     import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword } from './store.js';
 
+    const DEFAULT_TITLE = '대회 기록 입력 사이트';
+    const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
+
     const titleEl = document.getElementById('title');
     const subEl   = document.getElementById('subtitle');
     const board   = document.getElementById('board');
@@ -57,17 +60,17 @@
     const placeCells = e => `<td class="c1">${e.p1}</td><td>${e.p2}</td><td>${e.p3}</td><td class="c4">${e.p4}</td>`;
     const gapCell = g => `<td>${g == null ? '-' : fmt1(g)}</td>`;
 
-    function teamTable(teams) {
+    function teamTable(teams, colorMap) {
       const head = `<tr><th>순위</th><th class="tl">팀</th><th>승점</th><th>승점차</th><th>평균</th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>국수</th></tr>`;
-      const body = teams.map(e => `<tr>
+      const body = teams.map(e => `<tr style="background:${colorMap[e.team] || 'transparent'}">
         ${rankCell(e.rank)}<td class="tl">${e.team}</td>
         <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
         ${placeCells(e)}<td>${e.count}</td></tr>`).join('');
       return `<div class="tscroll"><table class="stats"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
     }
 
-    function indivTable(standings, teamInfo) {
+    function indivTable(standings, teamInfo, colorMap) {
       const teamMode = !!teamInfo;
       const head = `<tr><th>순위</th><th class="tl">아이디</th>
         ${teamMode ? '<th class="tl">팀</th><th>팀내</th>' : ''}
@@ -75,10 +78,11 @@
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
       const body = standings.map(e => {
         const ti = teamMode ? teamInfo[e.id] : null;
+        const bg = teamMode ? (colorMap[ti ? ti.team : '(미지정)'] || 'transparent') : 'transparent';
         const teamCols = teamMode
           ? `<td class="tl">${ti ? ti.team : '(미지정)'}</td><td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>`
           : '';
-        return `<tr>
+        return `<tr style="background:${bg}">
           ${rankCell(e.rank)}<td class="tl">${e.id}</td>${teamCols}
           <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
           ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`;
@@ -99,10 +103,12 @@
       if (t.rule === 'team') {
         const teams = computeTeamStandings(standings, t.participants);
         const info = computeTeamInfo(standings, t.participants);
-        html += `<div class="subhead">팀 순위</div>` + teamTable(teams);
-        html += `<div class="subhead">개인 순위</div>` + indivTable(standings, info);
+        const colorMap = {};
+        teams.forEach((tm, i) => { colorMap[tm.team] = TEAM_BG[i % TEAM_BG.length]; });
+        html += `<div class="subhead">팀 순위</div>` + teamTable(teams, colorMap);
+        html += `<div class="subhead">개인 순위</div>` + indivTable(standings, info, colorMap);
       } else {
-        html += indivTable(standings, null);
+        html += indivTable(standings, null, null);
       }
       board.innerHTML = html;
     }
@@ -110,13 +116,13 @@
     onActiveTournament(t => {
       if (gamesUnsub) { gamesUnsub(); gamesUnsub = null; }
       if (!t) {
-        titleEl.textContent = '마작 점수판';
+        titleEl.textContent = DEFAULT_TITLE; document.title = DEFAULT_TITLE;
         subEl.textContent = '진행 중인 대회가 없습니다. 관리자에서 대회를 선택하세요.';
         status.textContent = ''; legend.style.display = 'none';
         board.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>관리자 → 대회선택에서 대회를 정하세요.</div>`;
         return;
       }
-      titleEl.textContent = t.name;
+      titleEl.textContent = t.name; document.title = t.name;
       subEl.textContent = `${t.startDate} ~ ${t.endDate} · 승점 기준 누적 순위`;
       gamesUnsub = onGamesByTournament(t.id, games => renderAll(games, t));
     });

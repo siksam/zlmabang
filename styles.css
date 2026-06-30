@@ -366,3 +366,13 @@ input[type="number"] { text-align: right; }
 .stats .rank { width: 24px; height: 24px; font-size: 12px; }
 
 .legend { padding: 10px 14px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+/* 알람 입력 행 */
+.alarm-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.alarm-row input { width: 90px; font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.alarm-row span { color: var(--muted); font-size: 14px; }
+.alarm-del {
+  width: 30px; height: 30px; border: 1px solid #e9c4be; border-radius: 8px;
+  background: #fff; color: var(--accent); font-weight: 700; cursor: pointer; line-height: 1;
+}
+.alarm-del:hover { background: #fdf3f1; }
