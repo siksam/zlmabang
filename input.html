@@ -82,7 +82,7 @@
       if (Number.isNaN(sum) || sum !== expectedSum) { alert('합계점수가 맞지 않습니다. 확인해주세요.'); return; }
 
       saveBtn.disabled = true; saveBtn.textContent = '저장 중…';
-      try { await addGame(curT.id, result); window.location.href = 'index.html'; }
+      try { await addGame(curT.id, result); alert('점수가 저장되었습니다.'); window.location.href = 'index.html'; }
       catch (e) { console.error(e); alert('저장 실패. Firebase 설정/규칙을 확인해 주세요.'); saveBtn.disabled = false; saveBtn.textContent = '저장하기'; }
     }
 

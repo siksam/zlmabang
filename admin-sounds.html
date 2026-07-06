@@ -108,7 +108,7 @@
         if (b.dataset.act === 'test') { playSound(s); }
         else if (b.dataset.act === 'del') {
           if (!confirm(`‘${s.name}’ 알람음을 삭제할까요?`)) return;
-          try { await deleteSound(b.dataset.id); } catch (e) { console.error(e); alert('삭제 실패.'); }
+          try { await deleteSound(b.dataset.id); alert('알람음이 삭제되었습니다.'); } catch (e) { console.error(e); alert('삭제 실패.'); }
         }
       }));
     }

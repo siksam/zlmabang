@@ -147,7 +147,7 @@
       if (act === 'del') {
         const t = all.find(x => x.id === id);
         if (!confirm(`‘${t.name}’ 대회와 그 모든 경기 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
-        try { await deleteTournament(id); } catch (e) { console.error(e); alert('삭제 실패.'); }
+        try { await deleteTournament(id); alert('대회가 삭제되었습니다.'); } catch (e) { console.error(e); alert('삭제 실패.'); }
         return;
       }
       if (act === 'savemeta') {
@@ -179,7 +179,7 @@
           if (alarms.some(x => x.min >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
         }
 
-        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, alarms, startScore, returnScore, uma1, uma2, startDate, endDate }); editId = null; }
+        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, alarms, startScore, returnScore, uma1, uma2, startDate, endDate }); editId = null; alert('대회 정보가 수정되었습니다.'); }
         catch (e) { console.error(e); alert('저장 실패.'); }
       }
     }

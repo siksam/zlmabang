@@ -91,7 +91,7 @@
       if (act === 'cancel') { editing.delete(id); render(); return; }
       if (act === 'del') {
         if (!confirm('이 경기 기록을 삭제할까요?')) return;
-        try { await deleteGame(id); await load(); } catch(e){ console.error(e); alert('삭제 실패.'); }
+        try { await deleteGame(id); alert('기록이 삭제되었습니다.'); await load(); } catch(e){ console.error(e); alert('삭제 실패.'); }
         return;
       }
       if (act === 'savegame') {
@@ -103,7 +103,7 @@
           const sv = get('score').value;
           return { pos, id: idv, score: sv === '' ? null : Number(sv) };
         });
-        try { await updateGame(id, newRows); editing.delete(id); await load(); }
+        try { await updateGame(id, newRows); editing.delete(id); alert('기록이 수정되었습니다.'); await load(); }
         catch(e){ console.error(e); alert('저장 실패.'); }
       }
     }

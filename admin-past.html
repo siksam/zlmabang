@@ -80,13 +80,13 @@
       if (act === 'savename') {
         const v = list.querySelector(`[data-name="${id}"]`).value.trim();
         if (!v) { alert('대회명을 입력하세요.'); return; }
-        try { await updateTournament(id, { name: v }); openEdit.delete(id); } catch(e){ console.error(e); alert('저장 실패.'); }
+        try { await updateTournament(id, { name: v }); openEdit.delete(id); alert('대회명이 수정되었습니다.'); } catch(e){ console.error(e); alert('저장 실패.'); }
         return; // onTournaments가 갱신을 트리거함
       }
       if (act === 'del') {
         const t = tournaments.find(x => x.id === id);
         if (!confirm(`‘${t.name}’ 대회와 그 모든 경기 기록을 삭제할까요? 되돌릴 수 없습니다.`)) return;
-        try { await deleteTournament(id); } catch(e){ console.error(e); alert('삭제 실패.'); }
+        try { await deleteTournament(id); alert('대회가 삭제되었습니다.'); } catch(e){ console.error(e); alert('삭제 실패.'); }
       }
     }
 
