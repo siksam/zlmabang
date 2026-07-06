@@ -13,9 +13,9 @@
 <body>
   <main class="wrap">
     <header class="topbar">
-      <p class="eyebrow">東南西北 · 누적 점수판</p>
       <h1 id="title">대회 기록 입력 사이트</h1>
       <p id="subtitle">진행 중인 대회를 불러오는 중…</p>
+      <p class="made-by">made by siksam</p>
       <div class="tiles" aria-hidden="true">
         <span class="tile east">東</span><span class="tile south">南</span>
         <span class="tile west">西</span><span class="tile north">北</span>
@@ -250,7 +250,10 @@
         return;
       }
       titleEl.textContent = t.name; document.title = t.name;
-      subEl.textContent = `${t.startDate} ~ ${t.endDate} · 승점 기준 누적 순위`;
+      const rule = t.rule === 'team' ? '팀전' : '개인전';
+      const time = t.timed ? `시간제(${t.minutes || 0}분)` : '시간제 없음';
+      const uma = `${t.uma1 ?? 0}/${t.uma2 ?? 0}`;
+      subEl.textContent = `${rule} · ${time} · ${uma} · ${t.startDate} ~ ${t.endDate}`;
       gamesUnsub = onGamesByTournament(t.id, games => renderAll(games, t));
     });
 

@@ -26,9 +26,13 @@ export function beep(freq = 880, dur = 250, type = 'sine') {
   o.start(now); o.stop(now + dur / 1000);
 }
 
-// 사운드 파라미터로 재생 (null이면 기본 삑)
+// 사운드 재생: 업로드 파일(dataUrl)이면 오디오 재생, 아니면 합성음, null이면 기본 삑
 export function playSound(s) {
   if (!s) { beep(); return; }
+  if (s.dataUrl) {
+    try { const a = new Audio(s.dataUrl); a.play().catch(() => {}); } catch (e) {}
+    return;
+  }
   const n = Math.max(1, s.beeps || 1);
   const dur = s.duration || 250;
   const spacing = (s.interval && s.interval > 0) ? s.interval : (dur + 80);

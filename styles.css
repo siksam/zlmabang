@@ -415,3 +415,6 @@ input[type="number"] { text-align: right; }
   border-radius: 8px; background: #fff; color: var(--ink); font-weight: 600;
 }
 .alarm-row .alarm-test:hover { background: #faf8f2; }
+
+/* 만든이 표기 */
+.topbar .made-by { margin: 10px 0 0; font-size: 12px; color: rgba(241,239,230,.55); letter-spacing: .02em; }

@@ -267,13 +267,11 @@ export function ruleLabel(t) {
 /* ---------- 알람음 ---------- */
 const soundsCol = collection(db, 'sounds');
 
-// 기본 제공 사운드(항상 목록에 나타남)
+// 기본 제공 사운드 3개(합성음, 항상 목록에 나타남). 나머지는 업로드.
 const BUILTIN_SOUNDS = [
-  { id: 'builtin:beep',   name: '기본 삑',    freq: 880,  type: 'sine',   beeps: 1, duration: 250, interval: 0 },
-  { id: 'builtin:double', name: '삑삑(2회)',  freq: 880,  type: 'sine',   beeps: 2, duration: 150, interval: 200 },
-  { id: 'builtin:triple', name: '삑삑삑(3회)',freq: 990,  type: 'square', beeps: 3, duration: 130, interval: 170 },
-  { id: 'builtin:low',    name: '낮은 음',    freq: 440,  type: 'sine',   beeps: 1, duration: 420, interval: 0 },
-  { id: 'builtin:high',   name: '높은 음',    freq: 1320, type: 'sine',   beeps: 1, duration: 220, interval: 0 },
+  { id: 'builtin:beep',   name: '기본 삑',     freq: 880, type: 'sine',   beeps: 1, duration: 250, interval: 0 },
+  { id: 'builtin:double', name: '삑삑 (2회)',  freq: 880, type: 'sine',   beeps: 2, duration: 150, interval: 200 },
+  { id: 'builtin:triple', name: '삑삑삑 (3회)',freq: 990, type: 'square', beeps: 3, duration: 130, interval: 170 },
 ];
 export function builtinSounds() { return BUILTIN_SOUNDS.map(s => ({ ...s })); }
 export function allSounds(custom) { return [...BUILTIN_SOUNDS, ...(custom || [])]; }

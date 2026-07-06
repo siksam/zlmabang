@@ -13,32 +13,19 @@
 <body>
   <main class="wrap">
     <header class="topbar">
-      <p class="eyebrow">東南西北 · 관리자</p>
+      <p class="eyebrow">관리자 페이지</p>
       <h1>알람음 관리</h1>
-      <p>알람음을 만들고 이름을 붙여 저장합니다. 만든 소리는 알람설정에서 고를 수 있어요.</p>
+      <p>가지고 있는 음원 파일을 올려 알람음으로 씁니다. 올린 소리는 알람설정에서 고를 수 있어요.</p>
     </header>
 
-    <!-- 새 알람음 만들기 -->
+    <!-- 음원 업로드 -->
     <section class="card">
-      <div class="card-head"><h2>새 알람음</h2></div>
-      <div class="field"><label>이름</label><input type="text" id="s-name" placeholder="예: 짧은 삑삑"></div>
-      <div class="field"><label>파형</label>
-        <select id="s-type">
-          <option value="sine">부드러운 (sine)</option>
-          <option value="square">날카로운 (square)</option>
-          <option value="triangle">중간 (triangle)</option>
-          <option value="sawtooth">거친 (sawtooth)</option>
-        </select>
-      </div>
-      <div class="field"><label>음 높이 (Hz) — <span id="freq-val">880</span></label>
-        <input type="range" id="s-freq" min="200" max="1600" step="10" value="880" style="width:100%;">
-      </div>
-      <div class="field"><label>반복 / 길이(ms) / 간격(ms)</label>
-        <div class="row2">
-          <div class="inline-num"><input type="number" id="s-beeps" value="2" style="width:70px;"><span>회</span></div>
-          <div class="inline-num"><input type="number" id="s-dur" value="150" style="width:80px;"><span>ms</span></div>
-          <div class="inline-num"><input type="number" id="s-int" value="200" style="width:80px;"><span>ms</span></div>
-        </div>
+      <div class="card-head"><h2>알람음 업로드</h2></div>
+      <div class="field"><label>이름</label><input type="text" id="s-name" placeholder="예: 공지 벨"></div>
+      <div class="field">
+        <label>음원 파일 (mp3 · wav 등, 약 700KB 이하의 짧은 소리 권장)</label>
+        <input type="file" id="s-file" accept="audio/*" />
+        <p class="hint" id="file-info" style="margin:8px 2px 0;"></p>
       </div>
       <div style="padding:12px 14px;display:flex;gap:8px;">
         <button class="btn btn-ghost" id="s-test">테스트</button>
@@ -46,7 +33,7 @@
       </div>
     </section>
 
-    <!-- 저장된/기본 알람음 -->
+    <!-- 목록 -->
     <section class="card">
       <div class="card-head"><h2>알람음 목록</h2></div>
       <div id="list"><div class="empty">불러오는 중…</div></div>
@@ -61,32 +48,43 @@
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
 
+    const MAX_BYTES = 700 * 1024; // 약 700KB
     const listEl = document.getElementById('list');
-    const freqRange = document.getElementById('s-freq');
-    const freqVal = document.getElementById('freq-val');
-    freqRange.addEventListener('input', () => freqVal.textContent = freqRange.value);
+    const nameEl = document.getElementById('s-name');
+    const fileEl = document.getElementById('s-file');
+    const fileInfo = document.getElementById('file-info');
+    let pendingDataUrl = null;
 
-    function formSound() {
-      return {
-        name: document.getElementById('s-name').value.trim(),
-        type: document.getElementById('s-type').value,
-        freq: Number(freqRange.value) || 880,
-        beeps: Math.max(1, Number(document.getElementById('s-beeps').value) || 1),
-        duration: Math.max(30, Number(document.getElementById('s-dur').value) || 150),
-        interval: Math.max(0, Number(document.getElementById('s-int').value) || 0),
-      };
-    }
+    fileEl.addEventListener('change', () => {
+      pendingDataUrl = null; fileInfo.textContent = '';
+      const f = fileEl.files[0];
+      if (!f) return;
+      if (f.size > MAX_BYTES) {
+        fileInfo.textContent = `파일이 너무 큽니다 (${Math.round(f.size / 1024)}KB). 약 700KB 이하의 짧은 음원을 사용하세요.`;
+        fileEl.value = ''; return;
+      }
+      if (!nameEl.value.trim()) nameEl.value = f.name.replace(/\.[^.]+$/, '');
+      const reader = new FileReader();
+      reader.onload = () => { pendingDataUrl = reader.result; fileInfo.textContent = `${f.name} · ${Math.round(f.size / 1024)}KB — 준비됨`; };
+      reader.onerror = () => { fileInfo.textContent = '파일을 읽지 못했습니다.'; };
+      reader.readAsDataURL(f);
+    });
 
-    document.getElementById('s-test').addEventListener('click', () => playSound(formSound()));
+    document.getElementById('s-test').addEventListener('click', () => {
+      if (!pendingDataUrl) { alert('먼저 음원 파일을 선택하세요.'); return; }
+      playSound({ dataUrl: pendingDataUrl });
+    });
+
     document.getElementById('s-save').addEventListener('click', async () => {
-      const s = formSound();
-      if (!s.name) { alert('알람음 이름을 입력하세요.'); return; }
+      const name = nameEl.value.trim();
+      if (!name) { alert('이름을 입력하세요.'); return; }
+      if (!pendingDataUrl) { alert('음원 파일을 선택하세요.'); return; }
       const btn = document.getElementById('s-save'); btn.disabled = true; btn.textContent = '저장 중…';
       try {
-        await createSound(s);
-        document.getElementById('s-name').value = '';
+        await createSound({ name, dataUrl: pendingDataUrl });
+        nameEl.value = ''; fileEl.value = ''; pendingDataUrl = null; fileInfo.textContent = '';
         alert('알람음이 저장되었습니다.');
-      } catch (e) { console.error(e); alert('저장 실패. Firebase 규칙을 확인해 주세요.'); }
+      } catch (e) { console.error(e); alert('저장 실패. 파일이 너무 크거나 Firebase 규칙 문제일 수 있습니다.'); }
       btn.disabled = false; btn.textContent = '저장';
     });
 
@@ -94,20 +92,19 @@
     function render() {
       const builtins = builtinSounds();
       const row = (s, canDelete) => `<div class="record-card" style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;">
-        <span><b>${s.name}</b> <span class="meta-line">${s.type} · ${s.freq}Hz · ${s.beeps}회</span></span>
+        <span><b>${s.name}</b> <span class="meta-line">${s.dataUrl ? '업로드 음원' : '기본 제공'}</span></span>
         <span class="ed">
           <button data-act="test" data-id="${s.id}">테스트</button>
           ${canDelete ? `<button class="del" data-act="del" data-id="${s.id}">삭제</button>` : ''}
         </span></div>`;
       listEl.innerHTML =
-        `<div class="subhead" style="padding-left:6px;">내가 만든 알람음</div>` +
-        (custom.length ? custom.map(s => row(s, true)).join('') : `<div class="empty">아직 만든 알람음이 없어요.</div>`) +
+        `<div class="subhead" style="padding-left:6px;">내가 올린 알람음</div>` +
+        (custom.length ? custom.map(s => row(s, true)).join('') : `<div class="empty">아직 올린 알람음이 없어요.</div>`) +
         `<div class="subhead" style="padding-left:6px;">기본 제공</div>` +
         builtins.map(s => row(s, false)).join('');
 
       listEl.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
-        const all = [...builtins, ...custom];
-        const s = all.find(x => x.id === b.dataset.id);
+        const s = [...builtins, ...custom].find(x => x.id === b.dataset.id);
         if (b.dataset.act === 'test') { playSound(s); }
         else if (b.dataset.act === 'del') {
           if (!confirm(`‘${s.name}’ 알람음을 삭제할까요?`)) return;
