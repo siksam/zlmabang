@@ -24,8 +24,12 @@
 
   <script type="module">
     import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId,
-             updateTournament, deleteTournament, ruleLabel } from './store.js';
+             updateTournament, deleteTournament, ruleLabel,
+             getSoundsOnce, allSounds, resolveSound, normalizeAlarms } from './store.js';
+    import { playSound, unlockAudioOnGesture } from './audio.js';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+    unlockAudioOnGesture();
+    let customSounds = [];
 
     const list = document.getElementById('list');
     let activeId = null;
@@ -34,10 +38,13 @@
 
     async function refreshActive() { activeId = await getActiveTournamentId(); }
 
-    const alarmRowHtml = v => `<div class="alarm-row"><input type="number" class="alarm-min" value="${v}" placeholder="분" style="width:80px;"><span>분 전</span><button type="button" class="alarm-del">×</button></div>`;
+    function soundOptions(selId) {
+      return allSounds(customSounds).map(s => `<option value="${s.id}" ${s.id === selId ? 'selected' : ''}>${s.name}</option>`).join('');
+    }
+    const alarmRowHtml = a => `<div class="alarm-row"><input type="number" class="alarm-min" value="${a.min || ''}" placeholder="분" style="width:70px;"><span>분 전</span><span class="am-label">알람음</span><select class="alarm-sound"><option value="">기본음</option>${soundOptions(a.soundId)}</select><button type="button" class="alarm-test">테스트</button><button type="button" class="alarm-del">×</button></div>`;
 
     function editPanel(t) {
-      const alarms = Array.isArray(t.alarms) ? t.alarms : [];
+      const alarms = normalizeAlarms(t.alarms);
       return `<div class="edit-panel">
         <div class="ef"><label>대회명</label><input type="text" data-ef="name" value="${t.name}"></div>
         <div class="ef"><label>규칙</label>
@@ -115,12 +122,16 @@
         timedSel.addEventListener('change', sync); sync();
       }
       list.querySelectorAll('[data-alarmrows] .alarm-del').forEach(b => b.addEventListener('click', () => b.closest('.alarm-row').remove()));
+      list.querySelectorAll('[data-alarmrows] .alarm-test').forEach(b => b.addEventListener('click', () => {
+        playSound(resolveSound(b.closest('.alarm-row').querySelector('.alarm-sound').value, customSounds));
+      }));
       const addBtn = list.querySelector('.alarm-add-edit');
       if (addBtn && rows) addBtn.addEventListener('click', () => {
         const div = document.createElement('div');
         div.className = 'alarm-row';
-        div.innerHTML = `<input type="number" class="alarm-min" placeholder="분" style="width:80px;"><span>분 전</span><button type="button" class="alarm-del">×</button>`;
+        div.innerHTML = `<input type="number" class="alarm-min" placeholder="분" style="width:70px;"><span>분 전</span><span class="am-label">알람음</span><select class="alarm-sound"><option value="">기본음</option>${soundOptions('')}</select><button type="button" class="alarm-test">테스트</button><button type="button" class="alarm-del">×</button>`;
         div.querySelector('.alarm-del').addEventListener('click', () => div.remove());
+        div.querySelector('.alarm-test').addEventListener('click', () => playSound(resolveSound(div.querySelector('.alarm-sound').value, customSounds)));
         rows.appendChild(div);
       });
     }
@@ -153,7 +164,10 @@
         const startDate = get('startDate').value;
         const endDate = get('endDate').value;
         const alarms = timed
-          ? [...list.querySelectorAll('[data-alarmrows] .alarm-min')].map(i => Number(i.value)).filter(n => n > 0).sort((a, b) => b - a)
+          ? [...list.querySelectorAll('[data-alarmrows] .alarm-row')].map(r => ({
+              min: Number(r.querySelector('.alarm-min').value),
+              soundId: r.querySelector('.alarm-sound').value || null,
+            })).filter(a => a.min > 0).sort((a, b) => b.min - a.min)
           : [];
 
         if (!nm) { alert('대회명을 입력하세요.'); return; }
@@ -162,7 +176,7 @@
         if (rule === 'team' && (!teamCount || teamCount <= 0)) { alert('팀 수를 입력하세요.'); return; }
         if (timed) {
           if (!minutes || minutes <= 0) { alert('시간제 분을 입력하세요.'); return; }
-          if (alarms.some(x => x >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
+          if (alarms.some(x => x.min >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
         }
 
         try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, alarms, startScore, returnScore, uma1, uma2, startDate, endDate }); editId = null; }
@@ -170,7 +184,11 @@
       }
     }
 
-    (async () => { await refreshActive(); onTournaments(l => { all = l; render(); }); })();
+    (async () => {
+      try { customSounds = await getSoundsOnce(); } catch (e) { console.error(e); }
+      await refreshActive();
+      onTournaments(l => { all = l; render(); });
+    })();
   </script>
 </body>
 </html>

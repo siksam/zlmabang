@@ -62,7 +62,8 @@
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword } from './store.js';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js';
+    import { beep, playSound, endAlarm, unlockAudioOnGesture } from './audio.js';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
@@ -137,25 +138,10 @@
       }
     }
 
-    /* ---------- 오디오 ---------- */
-    let audioCtx = null;
-    function ensureAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    // 새로고침 후 첫 상호작용에 소리 잠금 해제
-    ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, ensureAudio));
-    function beep(freq = 880, dur = 250, type = 'sine') {
-      ensureAudio();
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.type = type; o.frequency.value = freq; o.connect(g); g.connect(audioCtx.destination);
-      const now = audioCtx.currentTime;
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.3, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + dur / 1000);
-      o.start(now); o.stop(now + dur / 1000);
-    }
-    function endAlarm() { [0, 350, 700, 1050].forEach(d => setTimeout(() => beep(660, 300, 'square'), d)); }
+    /* ---------- 오디오/알람음 ---------- */
+    unlockAudioOnGesture();
+    let customSounds = [];
+    onSounds(list => { customSounds = list; });
 
     /* ---------- 타이머 (새로고침 유지) ---------- */
     const timerCard = document.getElementById('timer-card');
@@ -187,14 +173,16 @@
       if (!timer) return;
       display.textContent = fmtClock(timer.remaining);
       timerNote.textContent = timer.alarms.length
-        ? `알람: 종료 ${[...timer.alarms].map(s => s / 60).sort((a, b) => b - a).join('·')}분 전`
+        ? `알람: 종료 ${timer.alarms.map(a => a.sec / 60).sort((a, b) => b - a).join('·')}분 전`
         : '알람 없음';
     }
     function tickTimer() {
       if (!timer || !timer.running) return;
       timer.remaining = Math.max(0, Math.round((timer.endAt - Date.now()) / 1000));
       for (const a of timer.alarms) {
-        if (timer.remaining <= a && !timer.fired.has(a)) { timer.fired.add(a); beep(880, 250); saveTimer(); }
+        if (timer.remaining <= a.sec && !timer.fired.has(a.sec)) {
+          timer.fired.add(a.sec); playSound(resolveSound(a.soundId, customSounds)); saveTimer();
+        }
       }
       if (timer.remaining <= 0 && !timer.ended) {
         timer.ended = true; timer.running = false; timer.endAt = null; endAlarm(); saveTimer();
@@ -206,12 +194,12 @@
       if (timerIv) { clearInterval(timerIv); timerIv = null; }
       if (!isAdmin || !t || !t.timed) { timerCard.style.display = 'none'; timer = null; return; }
       timerCard.style.display = 'block';
-      loadTimer(t.id, (t.minutes || 0) * 60, (t.alarms || []).map(a => a * 60));
+      const alarms = normalizeAlarms(t.alarms).map(a => ({ sec: a.min * 60, soundId: a.soundId }));
+      loadTimer(t.id, (t.minutes || 0) * 60, alarms);
       renderTimer();
       timerIv = setInterval(tickTimer, 250);
     }
     document.getElementById('t-start').addEventListener('click', () => {
-      ensureAudio();
       if (!timer || timer.running) return;
       if (timer.remaining <= 0) { timer.remaining = timer.total; timer.fired = new Set(); timer.ended = false; }
       timer.running = true; timer.endAt = Date.now() + timer.remaining * 1000;

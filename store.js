@@ -263,3 +263,43 @@ export function ruleLabel(t) {
   const time = t.timed ? `시간제 ${t.minutes || 0}분` : '시간제 없음';
   return `${base} · ${time}`;
 }
+
+/* ---------- 알람음 ---------- */
+const soundsCol = collection(db, 'sounds');
+
+// 기본 제공 사운드(항상 목록에 나타남)
+const BUILTIN_SOUNDS = [
+  { id: 'builtin:beep',   name: '기본 삑',    freq: 880,  type: 'sine',   beeps: 1, duration: 250, interval: 0 },
+  { id: 'builtin:double', name: '삑삑(2회)',  freq: 880,  type: 'sine',   beeps: 2, duration: 150, interval: 200 },
+  { id: 'builtin:triple', name: '삑삑삑(3회)',freq: 990,  type: 'square', beeps: 3, duration: 130, interval: 170 },
+  { id: 'builtin:low',    name: '낮은 음',    freq: 440,  type: 'sine',   beeps: 1, duration: 420, interval: 0 },
+  { id: 'builtin:high',   name: '높은 음',    freq: 1320, type: 'sine',   beeps: 1, duration: 220, interval: 0 },
+];
+export function builtinSounds() { return BUILTIN_SOUNDS.map(s => ({ ...s })); }
+export function allSounds(custom) { return [...BUILTIN_SOUNDS, ...(custom || [])]; }
+export function resolveSound(id, custom) {
+  if (!id) return null;
+  return allSounds(custom).find(s => s.id === id) || null;
+}
+
+export async function createSound(data) {
+  const ref = await addDoc(soundsCol, { ...data, createdAt: serverTimestamp() });
+  return ref.id;
+}
+export function onSounds(cb) {
+  return onSnapshot(soundsCol, snap => {
+    const l = []; snap.forEach(d => l.push({ id: d.id, ...d.data() })); cb(l);
+  }, err => { console.error('알람음 구독 오류:', err); cb([]); });
+}
+export async function getSoundsOnce() {
+  const snap = await getDocs(soundsCol);
+  const l = []; snap.forEach(d => l.push({ id: d.id, ...d.data() })); return l;
+}
+export async function updateSound(id, patch) { await updateDoc(doc(db, 'sounds', id), patch); }
+export async function deleteSound(id) { await deleteDoc(doc(db, 'sounds', id)); }
+
+// 알람 형식 표준화: 숫자(옛) → {min, soundId}
+export function normalizeAlarms(alarms) {
+  return (alarms || []).map(a =>
+    typeof a === 'number' ? { min: a, soundId: null } : { min: Number(a.min) || 0, soundId: a.soundId || null });
+}

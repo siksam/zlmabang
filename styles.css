@@ -403,3 +403,15 @@ input[type="number"] { text-align: right; }
 .admin-bar { margin-top: 40px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
 .admin-badge { font-weight: 700; color: var(--felt); font-size: 14px; }
 .admin-bar .btn { padding: 11px 18px; }
+
+/* 알람 행: 알람음 선택 + 테스트 */
+.alarm-row { flex-wrap: wrap; }
+.alarm-row .am-label { color: var(--muted); font-size: 13px; margin-left: 4px; }
+.alarm-row .alarm-sound {
+  font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+}
+.alarm-row .alarm-test {
+  font: inherit; cursor: pointer; padding: 8px 12px; border: 1px solid var(--line);
+  border-radius: 8px; background: #fff; color: var(--ink); font-weight: 600;
+}
+.alarm-row .alarm-test:hover { background: #faf8f2; }

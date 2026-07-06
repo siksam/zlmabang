@@ -90,8 +90,10 @@
   </main>
 
   <script type="module">
-    import { createTournament, todayStr, addDaysStr } from './store.js';
+    import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound } from './store.js';
+    import { playSound, unlockAudioOnGesture } from './audio.js';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+    unlockAudioOnGesture();
 
     const state = { rule: 'individual', timed: 'off' };
 
@@ -116,20 +118,30 @@
 
     // 알람 행 편집
     const alarmRows = document.getElementById('alarm-rows');
-    function addAlarmRow(v = '') {
+    let customSounds = [];
+    function soundOptions(selId) {
+      return allSounds(customSounds).map(s => `<option value="${s.id}" ${s.id === selId ? 'selected' : ''}>${s.name}</option>`).join('');
+    }
+    function addAlarmRow(min = '', soundId = '') {
       const div = document.createElement('div');
       div.className = 'alarm-row';
-      div.innerHTML = `<input type="number" class="alarm-min" inputmode="numeric" value="${v}" placeholder="분" style="width:80px;"><span>분 전</span><button type="button" class="alarm-del" title="삭제">×</button>`;
+      div.innerHTML = `<input type="number" class="alarm-min" inputmode="numeric" value="${min}" placeholder="분" style="width:70px;"><span>분 전</span>
+        <span class="am-label">알람음</span>
+        <select class="alarm-sound"><option value="">기본음</option>${soundOptions(soundId)}</select>
+        <button type="button" class="alarm-test">테스트</button>
+        <button type="button" class="alarm-del" title="삭제">×</button>`;
       div.querySelector('.alarm-del').addEventListener('click', () => div.remove());
+      div.querySelector('.alarm-test').addEventListener('click', () => playSound(resolveSound(div.querySelector('.alarm-sound').value, customSounds)));
       alarmRows.appendChild(div);
     }
     document.getElementById('alarm-add').addEventListener('click', () => addAlarmRow());
-    addAlarmRow(); // 기본 1개
+    (async () => { try { customSounds = await getSoundsOnce(); } catch (e) { console.error(e); } addAlarmRow(); })();
 
     function collectAlarms() {
-      return [...alarmRows.querySelectorAll('.alarm-min')]
-        .map(i => Number(i.value)).filter(n => n > 0)
-        .sort((a, b) => b - a);
+      return [...alarmRows.querySelectorAll('.alarm-row')].map(r => ({
+        min: Number(r.querySelector('.alarm-min').value),
+        soundId: r.querySelector('.alarm-sound').value || null,
+      })).filter(a => a.min > 0).sort((a, b) => b.min - a.min);
     }
 
     const today = todayStr();
@@ -156,7 +168,7 @@
       if (isTeam && (!teamCount || teamCount <= 0)) { alert('팀 수를 입력하세요.'); return; }
       if (timed) {
         if (!minutes || minutes <= 0) { alert('시간제 분을 입력하세요.'); return; }
-        if (alarms.some(x => x >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
+        if (alarms.some(x => x.min >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
       }
 
       const btn = document.getElementById('create');
