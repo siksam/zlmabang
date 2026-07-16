@@ -45,3 +45,34 @@ export function playSound(s) {
 export function endAlarm() {
   [0, 350, 700, 1050].forEach(d => setTimeout(() => beep(660, 300, 'square'), d));
 }
+
+/* ---------- 딩동댕 차임 + 음성 안내(TTS) ---------- */
+// 딩동댕(도-미-솔 상승) 알림음
+export function chime() {
+  const notes = [523.25, 659.25, 783.99];
+  notes.forEach((f, i) => setTimeout(() => beep(f, 260, 'sine'), i * 230));
+}
+
+// 한국어 음성으로 읽기
+export function speak(text) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR';
+    u.rate = 1.0;
+    window.speechSynthesis.speak(u);
+  } catch (e) { /* 음성 미지원 시 무시 */ }
+}
+
+// 딩동댕 후 "N분 남았습니다"
+export function speakAlarm(minutes) {
+  chime();
+  setTimeout(() => speak(`${minutes}분 남았습니다`), 780);
+}
+
+// 딩동댕 후 "시간이 종료되었습니다"
+export function speakEnd() {
+  chime();
+  setTimeout(() => speak('시간이 종료되었습니다'), 780);
+}

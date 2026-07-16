@@ -91,7 +91,7 @@
 
   <script type="module">
     import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound } from './store.js';
-    import { playSound, unlockAudioOnGesture } from './audio.js';
+    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
 
@@ -120,18 +120,23 @@
     const alarmRows = document.getElementById('alarm-rows');
     let customSounds = [];
     function soundOptions(selId) {
-      return allSounds(customSounds).map(s => `<option value="${s.id}" ${s.id === selId ? 'selected' : ''}>${s.name}</option>`).join('');
+      const tts = `<option value="tts" ${(!selId || selId === 'tts') ? 'selected' : ''}>음성 안내 (딩동댕+N분 남았습니다)</option>`;
+      return tts + allSounds(customSounds).map(s => `<option value="${s.id}" ${s.id === selId ? 'selected' : ''}>${s.name}</option>`).join('');
     }
     function addAlarmRow(min = '', soundId = '') {
       const div = document.createElement('div');
       div.className = 'alarm-row';
       div.innerHTML = `<input type="number" class="alarm-min" inputmode="numeric" value="${min}" placeholder="분" style="width:70px;"><span>분 전</span>
         <span class="am-label">알람음</span>
-        <select class="alarm-sound"><option value="">기본음</option>${soundOptions(soundId)}</select>
+        <select class="alarm-sound">${soundOptions(soundId)}</select>
         <button type="button" class="alarm-test">테스트</button>
         <button type="button" class="alarm-del" title="삭제">×</button>`;
       div.querySelector('.alarm-del').addEventListener('click', () => div.remove());
-      div.querySelector('.alarm-test').addEventListener('click', () => playSound(resolveSound(div.querySelector('.alarm-sound').value, customSounds)));
+      div.querySelector('.alarm-test').addEventListener('click', () => {
+        const v = div.querySelector('.alarm-sound').value;
+        if (!v || v === 'tts') speakAlarm(20);
+        else playSound(resolveSound(v, customSounds));
+      });
       alarmRows.appendChild(div);
     }
     document.getElementById('alarm-add').addEventListener('click', () => addAlarmRow());

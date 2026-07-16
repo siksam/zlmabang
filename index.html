@@ -63,7 +63,7 @@
 
   <script type="module">
     import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js';
-    import { beep, playSound, endAlarm, unlockAudioOnGesture } from './audio.js';
+    import { beep, playSound, speakAlarm, speakEnd, unlockAudioOnGesture } from './audio.js';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
@@ -181,11 +181,14 @@
       timer.remaining = Math.max(0, Math.round((timer.endAt - Date.now()) / 1000));
       for (const a of timer.alarms) {
         if (timer.remaining <= a.sec && !timer.fired.has(a.sec)) {
-          timer.fired.add(a.sec); playSound(resolveSound(a.soundId, customSounds)); saveTimer();
+          timer.fired.add(a.sec);
+          if (!a.soundId || a.soundId === 'tts') speakAlarm(a.sec / 60);
+          else playSound(resolveSound(a.soundId, customSounds));
+          saveTimer();
         }
       }
       if (timer.remaining <= 0 && !timer.ended) {
-        timer.ended = true; timer.running = false; timer.endAt = null; endAlarm(); saveTimer();
+        timer.ended = true; timer.running = false; timer.endAt = null; speakEnd(); saveTimer();
       }
       renderTimer();
     }
