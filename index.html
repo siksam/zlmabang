@@ -12,6 +12,13 @@
 </head>
 <body>
   <main class="wrap">
+    <div class="inapp-notice" id="inapp-notice" style="display:none;">
+      <span>카톡·네이버 등 <b>인앱 브라우저</b>에서는 음성 안내가 나오지 않아요. 크롬/사파리로 열면 정상 작동합니다.</span>
+      <span class="inapp-actions">
+        <button class="btn btn-primary" id="open-ext" style="padding:6px 12px;">외부 브라우저로 열기</button>
+        <button class="btn btn-ghost" id="inapp-close" style="padding:6px 10px;">닫기</button>
+      </span>
+    </div>
     <header class="topbar">
       <h1 id="title">대회 기록 입력 사이트</h1>
       <p id="subtitle">진행 중인 대회를 불러오는 중…</p>
@@ -60,6 +67,7 @@
       <button class="btn btn-ghost" id="admin-logout">관리자 해제</button>
     </div>
     <p class="admin-note" id="admin-note">관리자만 입장하세요.</p>
+    <footer class="app-version">v1.0.0</footer>
   </main>
 
   <script type="module">
@@ -220,6 +228,21 @@
       timer.fired = new Set(); timer.ended = false; saveTimer(); renderTimer();
     });
     document.getElementById('t-test').addEventListener('click', () => testSpeak());
+
+    /* ---------- 인앱 브라우저 안내 ---------- */
+    (function () {
+      const ua = navigator.userAgent || '';
+      const inApp = /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|FB_IAB|Line|DaumApps|; wv\)/i.test(ua);
+      const notice = document.getElementById('inapp-notice');
+      if (inApp) notice.style.display = 'flex';
+      document.getElementById('inapp-close').addEventListener('click', () => { notice.style.display = 'none'; });
+      document.getElementById('open-ext').addEventListener('click', () => {
+        const url = location.href;
+        if (/KAKAOTALK/i.test(ua)) { location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+        if (/Android/i.test(ua)) { location.href = 'intent://' + url.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end'; return; }
+        alert('브라우저 메뉴에서 “Safari로 열기” 또는 “다른 브라우저로 열기”를 선택하세요.');
+      });
+    })();
 
     /* ---------- 관리자 확인 UI ---------- */
     const gateLocked = document.getElementById('gate-locked');
