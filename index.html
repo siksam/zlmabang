@@ -29,6 +29,7 @@
         <button class="btn btn-primary" id="t-start">시작</button>
         <button class="btn btn-ghost" id="t-pause">일시정지</button>
         <button class="btn btn-ghost" id="t-reset">리셋</button>
+        <button class="btn btn-ghost" id="t-test">소리 테스트</button>
       </div>
       <p class="timer-note" id="timer-note"></p>
     </section>
@@ -63,7 +64,7 @@
 
   <script type="module">
     import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js';
-    import { beep, playSound, speakAlarm, speakEnd, unlockAudioOnGesture } from './audio.js';
+    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
@@ -218,6 +219,7 @@
       timer.running = false; timer.endAt = null; timer.remaining = timer.total;
       timer.fired = new Set(); timer.ended = false; saveTimer(); renderTimer();
     });
+    document.getElementById('t-test').addEventListener('click', () => testSpeak());
 
     /* ---------- 관리자 확인 UI ---------- */
     const gateLocked = document.getElementById('gate-locked');
