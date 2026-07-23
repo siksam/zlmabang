@@ -483,10 +483,15 @@ input[type="number"] { text-align: right; }
 /* 등수 이모지 (1·2·3위) */
 .rank-ic {
   display: grid; place-items: center;
-  height: 22px; line-height: 1; font-size: 19px;
+  height: 22px; line-height: 1; font-size: 18px;
   font-family: 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
 }
-.stats .rank-ic { font-size: 19px; }
+.rank-ic > i { display: block; font-style: normal; }
+/* 왕관 세로 보정: 마우스를 쓰는 기기(PC)에서만 적용 — 모바일은 원래 위치 유지 */
+@media (hover: hover) and (pointer: fine) {
+  .rank-ic.crown > i { transform: translateY(-2px); }
+}
+.stats .rank-ic { font-size: 18px; }
 
 /* 등수: 일반 숫자 (4위 이하) */
 .rank-n { display: grid; place-items: center; height: 22px; font-size: 13px; font-weight: 700; color: var(--ink); }
