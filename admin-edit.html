@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=108" />
+  <link rel="stylesheet" href="styles.css?v=109" />
 </head>
 <body>
   <main class="wrap">
@@ -20,12 +20,12 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.0.8</footer>
+    <footer class="app-version">v1.0.9</footer>
   </main>
 
   <script type="module">
     import { SEATS, getActiveTournamentId, getTournament, getGamesByTournament,
-             updateGame, deleteGame, rankWithinGame } from './store.js?v=108';
+             updateGame, deleteGame, rankWithinGame } from './store.js?v=109';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
     const SEAT_META = { '동':{han:'東',cls:'east'}, '남':{han:'南',cls:'south'}, '서':{han:'西',cls:'west'}, '북':{han:'北',cls:'north'} };
