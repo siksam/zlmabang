@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=113" />
+  <link rel="stylesheet" href="styles.css?v=120" />
 </head>
 <body>
   <main class="wrap">
@@ -34,16 +34,17 @@
         <a class="menu-item" href="admin-edit.html">기록수정 <span class="arr">→</span></a>
         <a class="menu-item" href="admin-sounds.html">알람음 관리 <span class="arr">→</span></a>
         <a class="menu-item" href="admin-info.html">상세 대회 정보 입력 <span class="arr">→</span></a>
+        <a class="menu-item" href="admin-bracket.html">대진표 입력 <span class="arr">→</span></a>
         <a class="menu-item" href="admin-past.html">지난대회기록 <span class="arr">→</span></a>
       </div>
     </div>
 
     <div class="actions"><a class="btn btn-ghost" href="index.html">점수판으로</a></div>
-    <footer class="app-version">v1.1.1</footer>
+    <footer class="app-version">v1.2.0</footer>
   </main>
 
   <script type="module">
-    import { checkAdminPassword, onActiveTournament } from './store.js?v=113';
+    import { checkAdminPassword, onActiveTournament } from './store.js?v=120';
     const gate = document.getElementById('gate');
     const menu = document.getElementById('menu');
     const sub  = document.getElementById('sub');

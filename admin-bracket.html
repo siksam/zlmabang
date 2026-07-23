@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대진표 입력 · 관리자</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=120" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <p class="eyebrow">관리자 페이지</p>
+      <h1>대진표 입력</h1>
+      <p id="subtitle">진행 중인 대회의 대진표를 작성합니다.</p>
+      <p class="made-by">made by siksam</p>
+    </header>
+
+    <p class="note">
+      각 국의 칸에 <b>한 줄 = 한 탁</b>으로 이름을 넣으세요. 이름 사이는 띄어쓰기·쉼표·탭 모두 됩니다.
+      엑셀에서 이름 영역을 복사해 그대로 붙여넣어도 됩니다.
+    </p>
+
+    <div id="rounds"></div>
+
+    <div style="margin-top:14px;">
+      <button class="btn btn-ghost" id="add-round" style="width:100%;">＋ 국 추가</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="save">저장하기</button>
+      <a class="btn btn-ghost" href="admin.html">관리자 메뉴</a>
+    </div>
+    <footer class="app-version">v1.2.0</footer>
+  </main>
+
+  <script type="module">
+    import { getActiveTournamentId, getTournament, updateTournament } from './store.js?v=120';
+    if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
+
+    const roundsEl = document.getElementById('rounds');
+    const saveBtn = document.getElementById('save');
+    let tid = null, curT = null, teams = [];
+
+    // 참가자에서 팀 목록 뽑기 (개인전이면 1~4 자리)
+    function deriveTeams(t) {
+      if (!t || t.rule !== 'team') return ['1', '2', '3', '4'];
+      const seen = [];
+      (t.participants || []).forEach(p => {
+        const tm = (p && p.team || '').trim() || '(미지정)';
+        if (!seen.includes(tm)) seen.push(tm);
+      });
+      return seen.length ? seen : ['1팀', '2팀', '3팀', '4팀'];
+    }
+
+    function roundCard(idx, data) {
+      const d = data || { title: `${idx + 1}국`, teamMode: false, tables: [] };
+      const text = (d.tables || []).map(row => row.join(' ')).join('\n');
+      return `
+        <div class="rnd-card" data-r="${idx}">
+          <div class="rnd-head">
+            <input type="text" class="rnd-title" value="${d.title || ''}" placeholder="국 이름 (예: 2국)">
+            <label class="rnd-chk"><input type="checkbox" class="rnd-team" ${d.teamMode ? 'checked' : ''}> 팀별 대국</label>
+            <button type="button" class="rnd-del" title="삭제">×</button>
+          </div>
+          <textarea class="rnd-text" placeholder="둡둡 츄얼리 빈 코스&#10;식샘 세튼 멍민 김뿌삐" ${d.teamMode ? 'disabled' : ''}>${text}</textarea>
+          <p class="rnd-hint">${d.teamMode ? '팀별 대국은 이름 입력 없이 “1탁=첫 팀” 순으로 표시됩니다.' : `열 순서: ${teams.join(' → ')}`}</p>
+        </div>`;
+    }
+
+    function render(list) {
+      roundsEl.innerHTML = list.map((d, i) => roundCard(i, d)).join('');
+      bind();
+    }
+    function collect() {
+      return [...roundsEl.querySelectorAll('.rnd-card')].map(c => {
+        const teamMode = c.querySelector('.rnd-team').checked;
+        const raw = c.querySelector('.rnd-text').value;
+        const tables = teamMode ? [] : raw.split('\n')
+          .map(l => l.trim()).filter(Boolean)
+          .map(l => l.split(/[\s,\t]+/).filter(Boolean));
+        return { title: c.querySelector('.rnd-title').value.trim() || '국', teamMode, tables };
+      });
+    }
+    function bind() {
+      roundsEl.querySelectorAll('.rnd-del').forEach(b => b.addEventListener('click', () => {
+        const list = collect();
+        list.splice(+b.closest('.rnd-card').dataset.r, 1);
+        render(list);
+      }));
+      roundsEl.querySelectorAll('.rnd-team').forEach(chk => chk.addEventListener('change', () => render(collect())));
+    }
+
+    document.getElementById('add-round').addEventListener('click', () => {
+      const list = collect();
+      list.push({ title: `${list.length + 1}국`, teamMode: false, tables: [] });
+      render(list);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      if (!tid) { alert('진행 중인 대회가 없습니다.'); return; }
+      const rounds = collect();
+      saveBtn.disabled = true; saveBtn.textContent = '저장 중…';
+      try {
+        await updateTournament(tid, { bracket: { teams, rounds } });
+        alert('대진표가 저장되었습니다.');
+        location.href = 'admin.html';
+      } catch (e) {
+        console.error(e); alert('저장 실패. Firebase 규칙을 확인해 주세요.');
+        saveBtn.disabled = false; saveBtn.textContent = '저장하기';
+      }
+    });
+
+    (async () => {
+      tid = await getActiveTournamentId();
+      curT = tid ? await getTournament(tid) : null;
+      if (!curT) {
+        document.getElementById('subtitle').textContent = '진행 중인 대회가 없습니다. 먼저 대회선택에서 지정하세요.';
+        document.getElementById('add-round').disabled = true;
+        saveBtn.disabled = true;
+        return;
+      }
+      teams = deriveTeams(curT);
+      document.getElementById('subtitle').textContent = `${curT.name} · 열 순서: ${teams.join(' → ')}`;
+      const saved = curT.bracket && Array.isArray(curT.bracket.rounds) ? curT.bracket.rounds : null;
+      render(saved || [{ title: '1국', teamMode: true, tables: [] }]);
+    })();
+  </script>
+</body>
+</html>

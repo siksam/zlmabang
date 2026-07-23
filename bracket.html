@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>대진표</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=120" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <h1 id="title">대진표</h1>
+      <p id="subtitle">대진표를 불러오는 중…</p>
+      <p class="made-by">made by siksam</p>
+    </header>
+
+    <section class="card" id="pick-card" style="display:none;">
+      <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:var(--muted);font-weight:600;">내 대진 보기</span>
+        <select id="who" style="flex:1;min-width:140px;"></select>
+        <button class="btn btn-ghost" id="clear" style="padding:9px 14px;">전체 보기</button>
+      </div>
+      <div id="mine"></div>
+    </section>
+
+    <div id="board"><div class="card"><div class="empty">불러오는 중…</div></div></div>
+
+    <div class="actions"><a class="btn btn-ghost" href="index.html">점수판으로</a></div>
+    <footer class="app-version">v1.2.0</footer>
+  </main>
+
+  <script type="module">
+    import { onActiveTournament } from './store.js?v=120';
+
+    const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
+    const TEAM_LINE = ['#1B7A5A','#C0392B','#C28A2C','#3B4A66','#7F77DD','#1D9E75','#B08D4A','#639922','#D4537E','#378ADD'];
+
+    const board = document.getElementById('board');
+    const pickCard = document.getElementById('pick-card');
+    const whoSel = document.getElementById('who');
+    const mineEl = document.getElementById('mine');
+    let bracket = null, highlight = '';
+
+    function allNames(b) {
+      const s = new Set();
+      (b.rounds || []).forEach(r => (r.tables || []).forEach(t => t.forEach(n => n && s.add(n))));
+      return [...s].sort((a, b2) => a.localeCompare(b2, 'ko'));
+    }
+
+    function roundBlock(r, teams) {
+      if (r.teamMode) {
+        const rows = teams.map((tm, i) =>
+          `<tr style="background:${TEAM_BG[i % TEAM_BG.length]}">
+             <td class="bk-t">${i + 1}탁</td><td class="bk-n" style="border-left:3px solid ${TEAM_LINE[i % TEAM_LINE.length]}">${tm} 전원</td>
+           </tr>`).join('');
+        return `<div class="bk-card"><div class="bk-head">${r.title} <span class="bk-tag">팀별 대국</span></div>
+          <table class="bk-tbl"><tbody>${rows}</tbody></table></div>`;
+      }
+      const head = `<tr><th class="bk-t">탁</th>${teams.map(t => `<th>${t}</th>`).join('')}</tr>`;
+      const rows = (r.tables || []).map((row, ri) => {
+        const cells = teams.map((_, ci) => {
+          const n = row[ci] || '';
+          const on = highlight && n === highlight;
+          return `<td class="bk-n${on ? ' bk-on' : ''}" style="border-left:3px solid ${TEAM_LINE[ci % TEAM_LINE.length]};background:${TEAM_BG[ci % TEAM_BG.length]}">${n}</td>`;
+        }).join('');
+        const mine = highlight && row.includes(highlight);
+        return `<tr class="${mine ? 'bk-row-on' : ''}"><td class="bk-t">${ri + 1}탁</td>${cells}</tr>`;
+      }).join('');
+      return `<div class="bk-card"><div class="bk-head">${r.title}</div>
+        <div class="tscroll"><table class="bk-tbl">${head ? `<thead>${head}</thead>` : ''}<tbody>${rows}</tbody></table></div></div>`;
+    }
+
+    function renderMine() {
+      if (!highlight) { mineEl.innerHTML = ''; return; }
+      const lines = (bracket.rounds || []).map(r => {
+        if (r.teamMode) return `<li><b>${r.title}</b> · 팀별 대국</li>`;
+        const i = (r.tables || []).findIndex(t => t.includes(highlight));
+        if (i < 0) return `<li><b>${r.title}</b> · <span class="id-empty">배정 없음</span></li>`;
+        const others = r.tables[i].filter(n => n !== highlight).join(' · ');
+        return `<li><b>${r.title}</b> · <b>${i + 1}탁</b> <span class="bk-vs">${others}</span></li>`;
+      }).join('');
+      mineEl.innerHTML = `<ul class="bk-mine">${lines}</ul>`;
+    }
+
+    function renderAll() {
+      const teams = bracket.teams || [];
+      board.innerHTML = (bracket.rounds || []).map(r => roundBlock(r, teams)).join('');
+      renderMine();
+    }
+
+    whoSel.addEventListener('change', () => { highlight = whoSel.value; renderAll(); });
+    document.getElementById('clear').addEventListener('click', () => { highlight = ''; whoSel.value = ''; renderAll(); });
+
+    onActiveTournament(t => {
+      if (!t) {
+        document.getElementById('subtitle').textContent = '진행 중인 대회가 없습니다.';
+        board.innerHTML = `<div class="card"><div class="empty"><strong>진행 중인 대회 없음</strong>관리자에서 대회를 선택하세요.</div></div>`;
+        return;
+      }
+      document.getElementById('title').textContent = t.name;
+      bracket = t.bracket && Array.isArray(t.bracket.rounds) ? t.bracket : null;
+      if (!bracket || bracket.rounds.length === 0) {
+        document.getElementById('subtitle').textContent = '등록된 대진표가 없습니다.';
+        pickCard.style.display = 'none';
+        board.innerHTML = `<div class="card"><div class="empty"><strong>대진표 없음</strong>관리자 → 대진표 입력에서 작성할 수 있습니다.</div></div>`;
+        return;
+      }
+      document.getElementById('subtitle').textContent = `${bracket.rounds.length}개 국 · 이름을 고르면 내 대진만 볼 수 있어요`;
+      const names = allNames(bracket);
+      whoSel.innerHTML = `<option value="">이름 선택…</option>` + names.map(n => `<option>${n}</option>`).join('');
+      pickCard.style.display = names.length ? 'block' : 'none';
+      renderAll();
+    });
+  </script>
+</body>
+</html>
