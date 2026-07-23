@@ -20,7 +20,7 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.0.2</footer>
+    <footer class="app-version">v1.0.4</footer>
   </main>
 
   <script type="module">
@@ -58,7 +58,7 @@
         return `<div class="edit-row">
           <select data-g="${g.id}" data-i="${i}" data-f="pos">${opts}</select>
           <input type="text" data-g="${g.id}" data-i="${i}" data-f="id" value="${r.id || ''}" placeholder="아이디" />
-          <input type="number" data-g="${g.id}" data-i="${i}" data-f="score" value="${(r.score===null||r.score==='')?'':r.score}" placeholder="점수" />
+          <input type="number" data-g="${g.id}" data-i="${i}" data-f="score" step="100" value="${(r.score===null||r.score==='')?'':r.score}" placeholder="점수" />
         </div>`;
       }).join('');
     }

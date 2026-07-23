@@ -244,14 +244,13 @@ export function computeTeamInfo(standings, participants) {
   return info;
 }
 
-// 승점 표시 (+부호, 소수 1자리)
+// 승점 표시 (부호는 -만, 소수 1자리 고정)
 export function fmtPoints(v) {
   const n = Math.round(v * 10) / 10;
-  const s = Number.isInteger(n) ? String(n) : n.toFixed(1);
-  return (n > 0 ? '+' : '') + s;
+  return (n === 0 ? 0 : n).toFixed(1);
 }
-// 부호 없는 소수 표시
-export function fmt1(v) { const n = Math.round(v * 10) / 10; return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+// 소수 1자리 고정
+export function fmt1(v) { const n = Math.round(v * 10) / 10; return (n === 0 ? 0 : n).toFixed(1); }
 export function fmt2(v) { return (Math.round(v * 100) / 100).toFixed(2); }
 
 /* ---------- 표시용 헬퍼 ---------- */
