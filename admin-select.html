@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=112" />
+  <link rel="stylesheet" href="styles.css?v=113" />
 </head>
 <body>
   <main class="wrap">
@@ -20,14 +20,14 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.1.0</footer>
+    <footer class="app-version">v1.1.1</footer>
   </main>
 
   <script type="module">
     import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId,
              updateTournament, deleteTournament, ruleLabel,
-             getSoundsOnce, allSounds, resolveSound, normalizeAlarms } from './store.js?v=112';
-    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=112';
+             getSoundsOnce, allSounds, resolveSound, normalizeAlarms } from './store.js?v=113';
+    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=113';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
     let customSounds = [];

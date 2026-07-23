@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=112" />
+  <link rel="stylesheet" href="styles.css?v=113" />
 </head>
 <body>
   <main class="wrap">
@@ -33,11 +33,11 @@
       <button class="btn btn-primary" id="save">저장하기</button>
       <a class="btn btn-ghost" href="index.html">돌아가기</a>
     </div>
-    <footer class="app-version">v1.1.0</footer>
+    <footer class="app-version">v1.1.1</footer>
   </main>
 
   <script type="module">
-    import { SEATS, getActiveTournamentId, getTournament, addGame } from './store.js?v=112';
+    import { SEATS, getActiveTournamentId, getTournament, addGame } from './store.js?v=113';
 
     const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
     const rowsEl = document.getElementById('rows');

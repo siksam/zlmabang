@@ -524,3 +524,40 @@ input[type="number"] { text-align: right; }
 
 /* 드롭다운이 잘리지 않도록 */
 .form-row { position: relative; }
+
+/* =========================================================
+   상세 대회 정보
+   ========================================================= */
+.topbar { position: relative; }
+.info-btn {
+  position: absolute; top: 18px; right: 18px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 999px;
+  background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28);
+  color: #F1EFE6; font-size: 12px; font-weight: 600; text-decoration: none;
+}
+.info-btn:hover { background: rgba(255,255,255,.24); }
+.info-i {
+  display: grid; place-items: center; width: 16px; height: 16px;
+  border-radius: 50%; border: 1.5px solid currentColor;
+  font-family: Georgia, 'Times New Roman', serif; font-size: 11px; font-weight: 700; line-height: 1;
+}
+
+/* 안내문 표시 */
+.info-text {
+  padding: 16px 14px; font-size: 15px; line-height: 1.75;
+  white-space: pre-wrap; word-break: keep-all; color: var(--ink);
+}
+
+/* 안내문 입력 */
+.info-input {
+  width: 100%; min-height: 260px; resize: vertical;
+  font: inherit; font-size: 15px; line-height: 1.7;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: #fff; color: var(--ink);
+}
+.info-input:focus-visible { outline: 2px solid var(--felt); outline-offset: 1px; border-color: var(--felt); }
+
+@media (max-width: 520px) {
+  .info-btn { position: static; margin-bottom: 12px; }
+}
