@@ -482,8 +482,12 @@ input[type="number"] { text-align: right; }
 
 /* 등수 이모지 (1·2·3위) */
 .rank-ic {
-  display: inline-block; line-height: 1; font-size: 17px;
+  display: inline-block; line-height: 1; font-size: 19px;
   vertical-align: middle;
   font-family: 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
 }
-.stats .rank-ic { font-size: 16px; }
+.stats .rank-ic { font-size: 19px; }
+
+/* 등수: 일반 숫자 (4위 이하) */
+.rank-n { font-size: 13px; font-weight: 700; color: var(--ink); }
+.stats .rank-n { font-size: 13px; }

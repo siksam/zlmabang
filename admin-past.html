@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=107" />
+  <link rel="stylesheet" href="styles.css?v=108" />
 </head>
 <body>
   <main class="wrap">
@@ -20,12 +20,12 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.0.7</footer>
+    <footer class="app-version">v1.0.8</footer>
   </main>
 
   <script type="module">
     import { onTournaments, getGamesByTournament, computeStandings, fmtPoints,
-             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js?v=107';
+             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js?v=108';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
     const list = document.getElementById('list');
@@ -36,7 +36,7 @@
 
     function rankMark(r) {
       const ic = r === 1 ? '\u{1F451}' : r === 2 ? '\u{1F948}' : r === 3 ? '\u{1F949}' : null;
-      return ic ? `<span class="rank-ic">${ic}</span>` : `<span class="rank">${r}</span>`;
+      return ic ? `<span class="rank-ic">${ic}</span>` : `<span class="rank-n">${r}</span>`;
     }
     function standTable(s) {
       if (!s || s.length === 0) return `<div class="empty">기록 없음</div>`;
