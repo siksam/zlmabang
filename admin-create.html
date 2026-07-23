@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=106" />
+  <link rel="stylesheet" href="styles.css?v=107" />
 </head>
 <body>
   <main class="wrap">
@@ -88,12 +88,12 @@
       <button class="btn btn-primary" id="create">대회 만들기</button>
       <a class="btn btn-ghost" href="admin.html">관리자 메뉴</a>
     </div>
-    <footer class="app-version">v1.0.6</footer>
+    <footer class="app-version">v1.0.7</footer>
   </main>
 
   <script type="module">
-    import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound } from './store.js?v=106';
-    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=106';
+    import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound } from './store.js?v=107';
+    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=107';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
 

@@ -129,8 +129,8 @@ tbody tr:last-child td { border-bottom: none; }
 
 .rank {
   display: inline-grid; place-items: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  font-size: 13px; font-weight: 700; color: #fff; background: var(--muted);
+  width: 22px; height: 22px; border-radius: 50%;
+  font-size: 12px; font-weight: 700; color: #fff; background: var(--muted);
 }
 .rank.r1 { background: var(--gold); }
 .rank.r2 { background: #9aa0a6; }
@@ -364,7 +364,7 @@ input[type="number"] { text-align: right; }
 .stats tbody tr:last-child td { border-bottom: none; }
 .stats td.c1, .stats th.c1 { color: #2f6fd0; }   /* 1착: 파랑 */
 .stats td.c4, .stats th.c4 { color: var(--accent); } /* 4착: 빨강 */
-.stats .rank { width: 24px; height: 24px; font-size: 12px; }
+.stats .rank { width: 20px; height: 20px; font-size: 11px; }
 
 .legend { padding: 10px 14px 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
 
@@ -479,3 +479,11 @@ input[type="number"] { text-align: right; }
 /* 순위표 열 폭 균형 (개인전/솔로 표 포함) */
 .stats { table-layout: auto; }
 .stats th, .stats td { padding-left: 6px; padding-right: 6px; }
+
+/* 등수 이모지 (1·2·3위) */
+.rank-ic {
+  display: inline-block; line-height: 1; font-size: 17px;
+  vertical-align: middle;
+  font-family: 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
+}
+.stats .rank-ic { font-size: 16px; }

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=106" />
+  <link rel="stylesheet" href="styles.css?v=107" />
 </head>
 <body>
   <main class="wrap">
@@ -68,12 +68,12 @@
       <button class="btn btn-ghost" id="admin-logout">관리자 해제</button>
     </div>
     <p class="admin-note" id="admin-note">관리자만 입장하세요.</p>
-    <footer class="app-version">v1.0.6</footer>
+    <footer class="app-version">v1.0.7</footer>
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=106';
-    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=106';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=107';
+    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=107';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
@@ -88,7 +88,15 @@
     let gamesUnsub = null;
     let currentT = null;
 
-    const rankCell = r => `<td><span class="rank r${r <= 3 ? r : ''}">${r}</span></td>`;
+    const rankBadge = r => `<span class="rank r${r <= 3 ? r : ''}">${r}</span>`;
+    // 개인: 1위 왕관 · 2위 은메달 · 3위 동메달 · 4위 이하 원문자
+    const rankCellInd = r => {
+      const ic = r === 1 ? '\u{1F451}' : r === 2 ? '\u{1F948}' : r === 3 ? '\u{1F949}' : null;
+      return `<td>${ic ? `<span class="rank-ic">${ic}</span>` : rankBadge(r)}</td>`;
+    };
+    // 팀: 1위만 왕관 · 2위 이하 원문자
+    const rankCellTeam = r => `<td>${r === 1 ? '<span class="rank-ic">\u{1F451}</span>' : rankBadge(r)}</td>`;
+    const rankCell = rankCellInd;
     const placeCells = e => `<td class="c1">${e.p1}</td><td>${e.p2}</td><td>${e.p3}</td><td class="c4">${e.p4}</td>`;
     const gapCell = g => `<td>${g == null ? '-' : fmt1(g)}</td>`;
 
@@ -97,7 +105,7 @@
         <th>순위</th><th class="tl" colspan="2">팀</th><th>승점</th><th>승점차</th><th>평균</th><th></th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
       const teamRows = teams.map(e => `<tr style="background:${colorMap[e.team] || 'transparent'}">
-        ${rankCell(e.rank)}<td class="tl" colspan="2">${e.team}</td>
+        ${rankCellTeam(e.rank)}<td class="tl" colspan="2">${e.team}</td>
         <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td><td></td>
         ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`).join('');
       const indHead = `<tr class="hrow">

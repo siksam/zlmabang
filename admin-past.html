@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=106" />
+  <link rel="stylesheet" href="styles.css?v=107" />
 </head>
 <body>
   <main class="wrap">
@@ -20,12 +20,12 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.0.6</footer>
+    <footer class="app-version">v1.0.7</footer>
   </main>
 
   <script type="module">
     import { onTournaments, getGamesByTournament, computeStandings, fmtPoints,
-             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js?v=106';
+             updateTournament, deleteTournament, ruleLabel, capacityLabel } from './store.js?v=107';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
     const list = document.getElementById('list');
@@ -34,10 +34,14 @@
     const openEdit = new Set();    // 이름수정 펼친 대회
     const standCache = {};         // tid -> standings
 
+    function rankMark(r) {
+      const ic = r === 1 ? '\u{1F451}' : r === 2 ? '\u{1F948}' : r === 3 ? '\u{1F949}' : null;
+      return ic ? `<span class="rank-ic">${ic}</span>` : `<span class="rank">${r}</span>`;
+    }
     function standTable(s) {
       if (!s || s.length === 0) return `<div class="empty">기록 없음</div>`;
       const body = s.map(e => `<tr>
-        <td><span class="rank r${e.rank<=3?e.rank:''}">${e.rank}</span></td>
+        <td>${rankMark(e.rank)}</td>
         <td>${e.id}</td><td class="num">${fmtPoints(e.points)}</td><td class="num">${e.count}</td></tr>`).join('');
       return `<table class="mini"><thead><tr><th style="width:44px">순위</th><th>아이디</th><th class="num">승점</th><th class="num">국수</th></tr></thead><tbody>${body}</tbody></table>`;
     }
