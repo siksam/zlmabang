@@ -496,3 +496,31 @@ input[type="number"] { text-align: right; }
 /* 등수: 일반 숫자 (4위 이하) */
 .rank-n { display: grid; place-items: center; height: 22px; font-size: 13px; font-weight: 700; color: var(--ink); }
 .stats .rank-n { font-size: 13px; }
+
+/* =========================================================
+   점수입력: 팀별 구분 아이디 드롭다운
+   ========================================================= */
+.idpick { position: relative; }
+.idpick input { width: 100%; padding-right: 28px; }
+.idpick-arrow {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  pointer-events: none; color: var(--muted); font-size: 12px;
+}
+.idpick-list {
+  position: absolute; z-index: 30; left: 0; right: 0; top: 100%; margin-top: 4px;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  max-height: 220px; overflow-y: auto; box-shadow: 0 8px 20px rgba(19,71,52,.14);
+}
+.idpick-head {
+  padding: 6px 10px; font-size: 11px; font-weight: 700; color: #5f5e5a;
+  position: sticky; top: 0;
+}
+.idpick-item {
+  padding: 10px 12px; font-size: 14px; cursor: pointer;
+  border-left: 3px solid transparent;
+}
+.idpick-item:hover, .idpick-item:active { background: #faf8f2; }
+.idpick-empty { padding: 12px; font-size: 13px; color: var(--muted); }
+
+/* 드롭다운이 잘리지 않도록 */
+.form-row { position: relative; }

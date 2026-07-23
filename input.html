@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=111" />
+  <link rel="stylesheet" href="styles.css?v=112" />
 </head>
 <body>
   <main class="wrap">
@@ -27,18 +27,17 @@
       </div>
     </section>
 
-    <datalist id="player-list"></datalist>
-    <p class="note">아이디는 칸에 직접 입력하거나 목록(인원관리에서 등록된 참가자)에서 고를 수 있습니다.</p>
+    <p class="note">아이디는 칸에 직접 입력하거나 목록에서 고를 수 있습니다. 팀전은 팀별로 구분되어 표시됩니다.</p>
 
     <div class="actions">
       <button class="btn btn-primary" id="save">저장하기</button>
       <a class="btn btn-ghost" href="index.html">돌아가기</a>
     </div>
-    <footer class="app-version">v1.0.11</footer>
+    <footer class="app-version">v1.1.0</footer>
   </main>
 
   <script type="module">
-    import { SEATS, getActiveTournamentId, getTournament, addGame } from './store.js?v=111';
+    import { SEATS, getActiveTournamentId, getTournament, addGame } from './store.js?v=112';
 
     const SEAT_CLS = { '동': 'east', '남': 'south', '서': 'west', '북': 'north' };
     const rowsEl = document.getElementById('rows');
@@ -46,19 +45,75 @@
     const saveBtn = document.getElementById('save');
     let curT = null, expectedSum = 100000;
 
-    function fillDatalist(participants) {
-      document.getElementById('player-list').innerHTML =
-        (participants || []).map(p => `<option value="${p.id}"></option>`).join('');
+    // 참가자를 팀별로 묶고 팀 색을 배정 (개인전이면 그룹 없이 전체 목록)
+    const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
+    const TEAM_LINE = ['#1B7A5A','#C0392B','#C28A2C','#3B4A66','#7F77DD','#1D9E75','#B08D4A','#639922','#D4537E','#378ADD'];
+    let groups = [];   // [{team, color, line, ids:[]}]
+
+    function buildGroups(t) {
+      const list = (t && Array.isArray(t.participants)) ? t.participants : [];
+      if (!t || t.rule !== 'team') {
+        groups = [{ team: null, color: '', line: '', ids: list.map(p => p.id).filter(Boolean) }];
+        return;
+      }
+      const map = new Map();
+      list.forEach(p => {
+        if (!p || !p.id) return;
+        const tm = (p.team || '').trim() || '(미지정)';
+        if (!map.has(tm)) map.set(tm, []);
+        map.get(tm).push(p.id);
+      });
+      groups = [...map.entries()].map(([team, ids], i) => ({
+        team, ids, color: TEAM_BG[i % TEAM_BG.length], line: TEAM_LINE[i % TEAM_LINE.length],
+      }));
     }
+
     function buildRows() {
-      rowsEl.innerHTML = SEATS.map(seat => `
+      rowsEl.innerHTML = SEATS.map((seat, i) => `
         <div class="form-row">
           <span class="seat-badge seat-${SEAT_CLS[seat.pos]}"><span class="han">${seat.hanja}</span>${seat.pos}</span>
-          <input type="text" list="player-list" placeholder="아이디 입력 또는 선택" data-role="id" />
+          <div class="idpick">
+            <input type="text" placeholder="아이디 입력 또는 선택" data-role="id" data-i="${i}" autocomplete="off" />
+            <span class="idpick-arrow" aria-hidden="true">▾</span>
+            <div class="idpick-list" data-list="${i}" hidden></div>
+          </div>
           <input type="number" placeholder="점수" inputmode="numeric" step="100" data-role="score" />
         </div>`).join('');
       rowsEl.querySelectorAll('[data-role="score"]').forEach(inp => inp.addEventListener('input', updateSum));
+      rowsEl.querySelectorAll('[data-role="id"]').forEach(setupPicker);
       updateSum();
+    }
+
+    // 팀별 구분 드롭다운
+    function setupPicker(input) {
+      const box = rowsEl.querySelector(`[data-list="${input.dataset.i}"]`);
+      function render() {
+        const q = input.value.trim();
+        let html = '';
+        groups.forEach(g => {
+          const hits = g.ids.filter(id => !q || id.includes(q));
+          if (!hits.length) return;
+          if (g.team) html += `<div class="idpick-head" style="background:${g.color}">${g.team}</div>`;
+          hits.forEach(id => {
+            html += `<div class="idpick-item" data-id="${id}"${g.line ? ` style="border-left-color:${g.line}"` : ''}>${id}</div>`;
+          });
+        });
+        box.innerHTML = html || '<div class="idpick-empty">일치하는 아이디 없음</div>';
+      }
+      function open() { render(); box.hidden = false; }
+      function close() { box.hidden = true; }
+      input.addEventListener('focus', open);
+      input.addEventListener('input', open);
+      input.addEventListener('blur', () => setTimeout(close, 150));
+      function pick(e) {
+        const it = e.target.closest('.idpick-item');
+        if (!it) return;
+        e.preventDefault();
+        input.value = it.dataset.id;
+        close();
+      }
+      box.addEventListener('mousedown', pick);
+      box.addEventListener('touchstart', pick, { passive: false });
     }
     function currentSum() {
       return [...document.querySelectorAll('[data-role="score"]')]
@@ -116,7 +171,7 @@
       expectedSum = 4 * (curT.startScore != null ? Number(curT.startScore) : 25000);
       document.getElementById('title').textContent = curT.name;
       document.getElementById('subtitle').textContent = `한 경기 결과를 입력하면 이 대회에 추가됩니다. (합계 ${expectedSum.toLocaleString('ko-KR')})`;
-      fillDatalist(curT.participants);
+      buildGroups(curT);
       buildRows();
       document.getElementById('auto-calc').addEventListener('click', autoCalc);
       saveBtn.addEventListener('click', save);
