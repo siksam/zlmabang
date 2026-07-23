@@ -302,3 +302,20 @@ export function normalizeAlarms(alarms) {
   return (alarms || []).map(a =>
     typeof a === 'number' ? { min: a, soundId: null } : { min: Number(a.min) || 0, soundId: a.soundId || null });
 }
+
+/* ---------- 세부 규칙 체크 항목 ---------- */
+export const RULE_FLAGS = [
+  { key: 'doubleRon',     label: '더블론' },
+  { key: 'tripleRon',     label: '트리플론' },
+  { key: 'abortiveDraw',  label: '도중유국' },
+  { key: 'kiriage',       label: '절상만관 적용' },
+  { key: 'westEntry',     label: '서입' },
+  { key: 'tobi',          label: '들통(토비)' },
+  { key: 'tenpaiYame',    label: '텐파이야메' },
+  { key: 'agariYame',     label: '아가리야메' },
+];
+// 적용 중인 항목만 뽑기
+export function activeRuleFlags(t) {
+  const f = (t && t.flags) || {};
+  return RULE_FLAGS.filter(r => f[r.key]);
+}

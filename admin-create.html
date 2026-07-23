@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=121" />
+  <link rel="stylesheet" href="styles.css?v=122" />
 </head>
 <body>
   <main class="wrap">
@@ -67,12 +67,23 @@
         </div>
       </div>
       <div class="field">
-        <label>우마 (1·2등 / 3·4등은 자동 반전)</label>
-        <div class="inline-num">
-          <input type="number" id="uma1" value="15" inputmode="numeric" style="width:90px;">
-          <span>/</span>
-          <input type="number" id="uma2" value="5" inputmode="numeric" style="width:90px;">
+        <label>우마 / 오카</label>
+        <div class="row2">
+          <div class="inline-num">
+            <span>우마</span>
+            <input type="number" id="uma1" value="15" inputmode="numeric" style="width:80px;">
+            <span>/</span>
+            <input type="number" id="uma2" value="5" inputmode="numeric" style="width:80px;">
+          </div>
+          <div class="inline-num">
+            <span>오카</span>
+            <input type="number" id="oka" value="0" inputmode="numeric" style="width:80px;">
+          </div>
         </div>
+      </div>
+      <div class="field">
+        <label>세부 규칙 (체크한 항목만 적용)</label>
+        <div class="rule-flags" id="rule-flags"></div>
       </div>
       <div class="field">
         <label>기간 (날짜)</label>
@@ -88,14 +99,23 @@
       <button class="btn btn-primary" id="create">대회 만들기</button>
       <a class="btn btn-ghost" href="admin.html">관리자 메뉴</a>
     </div>
-    <footer class="app-version">v1.2.1</footer>
+    <footer class="app-version">v1.3.0</footer>
   </main>
 
   <script type="module">
-    import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound } from './store.js?v=121';
-    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=121';
+    import { createTournament, todayStr, addDaysStr, getSoundsOnce, allSounds, resolveSound, RULE_FLAGS } from './store.js?v=122';
+    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=122';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
+
+    // 세부 규칙 체크박스
+    document.getElementById('rule-flags').innerHTML = RULE_FLAGS.map(r =>
+      `<label class="flag-chk"><input type="checkbox" data-flag="${r.key}">${r.label}</label>`).join('');
+    function collectFlags() {
+      const o = {};
+      document.querySelectorAll('[data-flag]').forEach(c => { o[c.dataset.flag] = c.checked; });
+      return o;
+    }
 
     const state = { rule: 'individual', timed: 'off' };
 
@@ -167,6 +187,8 @@
       const returnScore = Number(document.getElementById('returnScore').value) || 25000;
       const uma1 = Number(document.getElementById('uma1').value) || 0;
       const uma2 = Number(document.getElementById('uma2').value) || 0;
+      const oka = Number(document.getElementById('oka').value) || 0;
+      const flags = collectFlags();
       const alarms = timed ? collectAlarms() : [];
 
       if (!name) { alert('대회명을 입력하세요.'); return; }
@@ -183,7 +205,7 @@
       try {
         await createTournament({
           name, rule: state.rule, teamCount, timed, minutes, alarms,
-          startScore, returnScore, uma1, uma2,
+          startScore, returnScore, uma1, uma2, oka, flags,
           capacity: 0, startDate: start, endDate: end, participants: [],
         });
         alert(`‘${name}’ 대회가 생성되었습니다.\n‘대회선택’에서 진행 대회로 지정하세요.`);

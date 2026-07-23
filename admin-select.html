@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=121" />
+  <link rel="stylesheet" href="styles.css?v=122" />
 </head>
 <body>
   <main class="wrap">
@@ -20,14 +20,14 @@
 
     <section id="list"><div class="card"><div class="empty">불러오는 중…</div></div></section>
     <div class="actions"><a class="btn btn-ghost" href="admin.html">관리자 메뉴</a></div>
-    <footer class="app-version">v1.2.1</footer>
+    <footer class="app-version">v1.3.0</footer>
   </main>
 
   <script type="module">
     import { onTournaments, isOngoing, setActiveTournament, getActiveTournamentId,
              updateTournament, deleteTournament, ruleLabel,
-             getSoundsOnce, allSounds, resolveSound, normalizeAlarms } from './store.js?v=121';
-    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=121';
+             getSoundsOnce, allSounds, resolveSound, normalizeAlarms, RULE_FLAGS } from './store.js?v=122';
+    import { playSound, speakAlarm, unlockAudioOnGesture } from './audio.js?v=122';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
     unlockAudioOnGesture();
     let customSounds = [];
@@ -74,9 +74,15 @@
           <input type="number" data-ef="startScore" value="${t.startScore ?? 25000}" placeholder="시작" style="width:90px;">
           <input type="number" data-ef="returnScore" value="${t.returnScore ?? 25000}" placeholder="반환" style="width:90px;">
         </div>
-        <div class="ef"><label>우마</label>
-          <input type="number" data-ef="uma1" value="${t.uma1 ?? ''}" placeholder="1·2등" style="width:90px;"> /
-          <input type="number" data-ef="uma2" value="${t.uma2 ?? ''}" placeholder="3·4등" style="width:90px;">
+        <div class="ef"><label>우마/오카</label>
+          <input type="number" data-ef="uma1" value="${t.uma1 ?? ''}" placeholder="1·2등" style="width:78px;"> /
+          <input type="number" data-ef="uma2" value="${t.uma2 ?? ''}" placeholder="3·4등" style="width:78px;">
+          <span style="color:var(--muted);font-size:13px;">오카</span>
+          <input type="number" data-ef="oka" value="${t.oka ?? 0}" placeholder="오카" style="width:78px;">
+        </div>
+        <div class="ef" style="align-items:flex-start;"><label>세부규칙</label>
+          <div class="rule-flags" style="flex:1;">${RULE_FLAGS.map(r =>
+            `<label class="flag-chk"><input type="checkbox" data-flag="${r.key}" ${(t.flags && t.flags[r.key]) ? 'checked' : ''}>${r.label}</label>`).join('')}</div>
         </div>
         <div class="ef"><label>기간</label>
           <input type="date" data-ef="startDate" value="${t.startDate}"> ~
@@ -169,6 +175,9 @@
         const returnScore = Number(get('returnScore').value) || 25000;
         const uma1 = Number(get('uma1').value) || 0;
         const uma2 = Number(get('uma2').value) || 0;
+        const oka = Number(get('oka').value) || 0;
+        const flags = {};
+        list.querySelectorAll('[data-flag]').forEach(c => { flags[c.dataset.flag] = c.checked; });
         const startDate = get('startDate').value;
         const endDate = get('endDate').value;
         const alarms = timed
@@ -187,7 +196,7 @@
           if (alarms.some(x => x.min >= minutes)) { alert('알람 시간은 시간제 시간보다 작아야 합니다.'); return; }
         }
 
-        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, alarms, startScore, returnScore, uma1, uma2, startDate, endDate }); editId = null; alert('대회 정보가 수정되었습니다.'); }
+        try { await updateTournament(id, { name: nm, rule, teamCount, timed, minutes, alarms, startScore, returnScore, uma1, uma2, oka, flags, startDate, endDate }); editId = null; alert('대회 정보가 수정되었습니다.'); }
         catch (e) { console.error(e); alert('저장 실패.'); }
       }
     }

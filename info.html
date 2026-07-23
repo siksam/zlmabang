@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=121" />
+  <link rel="stylesheet" href="styles.css?v=122" />
 </head>
 <body>
   <main class="wrap">
@@ -19,37 +19,59 @@
     </header>
 
     <section class="card">
+      <div class="card-head"><h2>대회 정보</h2></div>
+      <div id="meta"><div class="empty">불러오는 중…</div></div>
+    </section>
+
+    <section class="card" id="note-card" style="display:none;">
       <div class="card-head"><h2>안내</h2></div>
-      <div id="body"><div class="empty">불러오는 중…</div></div>
+      <div id="body"></div>
     </section>
 
     <div class="actions"><a class="btn btn-ghost" href="index.html">점수판으로</a></div>
-    <footer class="app-version">v1.2.1</footer>
+    <footer class="app-version">v1.3.0</footer>
   </main>
 
   <script type="module">
-    import { onActiveTournament } from './store.js?v=121';
+    import { onActiveTournament, RULE_FLAGS } from './store.js?v=122';
 
     const titleEl = document.getElementById('title');
     const subEl   = document.getElementById('subtitle');
+    const metaEl  = document.getElementById('meta');
     const bodyEl  = document.getElementById('body');
+    const noteCard= document.getElementById('note-card');
+
+    const row = (k, v) => `<tr><th>${k}</th><td>${v}</td></tr>`;
 
     onActiveTournament(t => {
       if (!t) {
         subEl.textContent = '진행 중인 대회가 없습니다.';
-        bodyEl.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>관리자에서 대회를 선택하세요.</div>`;
+        metaEl.innerHTML = `<div class="empty"><strong>진행 중인 대회 없음</strong>관리자에서 대회를 선택하세요.</div>`;
+        noteCard.style.display = 'none';
         return;
       }
       titleEl.textContent = t.name;
-      const rule = t.rule === 'team' ? '팀전' : '개인전';
-      const time = t.timed ? `시간제(${t.minutes || 0}분)` : '시간제 없음';
-      subEl.textContent = `${rule} · ${time} · ${t.uma1 ?? 0}/${t.uma2 ?? 0} · ${t.startDate} ~ ${t.endDate}`;
+      subEl.textContent = `${t.startDate} ~ ${t.endDate}`;
+
+      const rule = t.rule === 'team' ? `팀전${t.teamCount ? ` (${t.teamCount}팀)` : ''}` : '개인전';
+      const time = t.timed ? `시간제 ${t.minutes || 0}분` : '시간제 없음';
+      const alarms = (t.alarms || []).map(a => (typeof a === 'number' ? a : a.min));
+      const on = RULE_FLAGS.filter(r => t.flags && t.flags[r.key]).map(r => r.label);
+      const off = RULE_FLAGS.filter(r => !(t.flags && t.flags[r.key])).map(r => r.label);
+
+      metaEl.innerHTML = `<table class="meta-tbl"><tbody>
+        ${row('기간', `${t.startDate} ~ ${t.endDate}`)}
+        ${row('방식', rule)}
+        ${row('진행', time + (alarms.length ? ` · 알람 ${alarms.sort((a,b)=>b-a).join('·')}분 전` : ''))}
+        ${row('점수', `시작 ${(t.startScore ?? 25000).toLocaleString('ko-KR')} · 반환 ${(t.returnScore ?? 25000).toLocaleString('ko-KR')}`)}
+        ${row('우마 / 오카', `${t.uma1 ?? 0} / ${t.uma2 ?? 0}${(t.oka ?? 0) ? ` · 오카 ${t.oka}` : ' · 오카 없음'}`)}
+        ${row('적용 규칙', on.length ? on.join(' · ') : '<span class="id-empty">없음</span>')}
+        ${row('미적용', off.length ? `<span class="id-empty">${off.join(' · ')}</span>` : '<span class="id-empty">없음</span>')}
+      </tbody></table>`;
 
       const text = (t.info || '').trim();
-      if (!text) {
-        bodyEl.innerHTML = `<div class="empty"><strong>등록된 안내가 없어요</strong>관리자 → 상세 대회 정보 입력에서 작성할 수 있습니다.</div>`;
-        return;
-      }
+      if (!text) { noteCard.style.display = 'none'; return; }
+      noteCard.style.display = 'block';
       bodyEl.innerHTML = '<div class="info-text"></div>';
       bodyEl.querySelector('.info-text').textContent = text;
     });

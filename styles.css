@@ -619,3 +619,26 @@ input[type="number"] { text-align: right; }
 @media (max-width: 520px) {
   .info-btns { position: static; margin-bottom: 12px; flex-wrap: wrap; }
 }
+
+/* 세부 규칙 체크박스 */
+.rule-flags { display: flex; flex-wrap: wrap; gap: 8px 6px; }
+.flag-chk {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px;
+  background: #fff; font-size: 13px; cursor: pointer; user-select: none;
+}
+.flag-chk:has(input:checked) { background: #eef5ef; border-color: #bcd8cc; color: var(--felt-deep); font-weight: 600; }
+.flag-chk input { margin: 0; }
+
+/* 대회 정보 표 */
+.meta-tbl { width: 100%; border-collapse: collapse; }
+.meta-tbl th {
+  width: 92px; text-align: left; vertical-align: top;
+  padding: 11px 8px 11px 14px; font-size: 12px; font-weight: 600; color: var(--muted);
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.meta-tbl td {
+  padding: 11px 14px 11px 4px; font-size: 14px; line-height: 1.6;
+  border-bottom: 1px solid var(--line); word-break: keep-all;
+}
+.meta-tbl tr:last-child th, .meta-tbl tr:last-child td { border-bottom: none; }

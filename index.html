@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=121" />
+  <link rel="stylesheet" href="styles.css?v=122" />
 </head>
 <body>
   <main class="wrap">
@@ -72,12 +72,12 @@
       <button class="btn btn-ghost" id="admin-logout">관리자 해제</button>
     </div>
     <p class="admin-note" id="admin-note">관리자만 입장하세요.</p>
-    <footer class="app-version">v1.2.1</footer>
+    <footer class="app-version">v1.3.0</footer>
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=121';
-    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=121';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=122';
+    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=122';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
