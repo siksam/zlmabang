@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=120" />
+  <link rel="stylesheet" href="styles.css?v=121" />
 </head>
 <body>
   <main class="wrap">
@@ -34,11 +34,11 @@
       <button class="btn btn-primary" id="save">저장하기</button>
       <a class="btn btn-ghost" href="admin.html">관리자 메뉴</a>
     </div>
-    <footer class="app-version">v1.2.0</footer>
+    <footer class="app-version">v1.2.1</footer>
   </main>
 
   <script type="module">
-    import { getActiveTournamentId, getTournament, updateTournament } from './store.js?v=120';
+    import { getActiveTournamentId, getTournament, updateTournament } from './store.js?v=121';
     if (sessionStorage.getItem('admin_ok') !== '1') location.replace('admin.html');
 
     const roundsEl = document.getElementById('rounds');
@@ -58,7 +58,7 @@
 
     function roundCard(idx, data) {
       const d = data || { title: `${idx + 1}국`, teamMode: false, tables: [] };
-      const text = (d.tables || []).map(row => row.join(' ')).join('\n');
+      const text = (d.tables || []).map(row => (Array.isArray(row) ? row : (row.names || [])).join(' ')).join('\n');
       return `
         <div class="rnd-card" data-r="${idx}">
           <div class="rnd-head">
@@ -81,7 +81,7 @@
         const raw = c.querySelector('.rnd-text').value;
         const tables = teamMode ? [] : raw.split('\n')
           .map(l => l.trim()).filter(Boolean)
-          .map(l => l.split(/[\s,\t]+/).filter(Boolean));
+          .map(l => ({ names: l.split(/[\s,\t]+/).filter(Boolean) }));
         return { title: c.querySelector('.rnd-title').value.trim() || '국', teamMode, tables };
       });
     }
@@ -109,7 +109,8 @@
         alert('대진표가 저장되었습니다.');
         location.href = 'admin.html';
       } catch (e) {
-        console.error(e); alert('저장 실패. Firebase 규칙을 확인해 주세요.');
+        console.error(e);
+        alert('저장 실패: ' + (e && e.message ? e.message : '알 수 없는 오류'));
         saveBtn.disabled = false; saveBtn.textContent = '저장하기';
       }
     });
