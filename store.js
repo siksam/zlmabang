@@ -217,12 +217,14 @@ export function computeTeamStandings(standings, participants) {
     const tt = map.get(team);
     tt.points += e.points; tt.count += e.count; tt.members += 1;
     tt.p1 += e.p1; tt.p2 += e.p2; tt.p3 += e.p3; tt.p4 += e.p4;
+    tt.rankSum = (tt.rankSum || 0) + (e.avgRank * e.count);
   });
   const arr = [...map.values()].sort((a, b) => b.points - a.points);
   arr.forEach((e, i) => {
     e.rank = (i > 0 && arr[i - 1].points === e.points) ? arr[i - 1].rank : i + 1;
     e.gap = (i === 0) ? null : (arr[i - 1].points - e.points);
     e.avgPoints = e.count ? e.points / e.count : 0;
+    e.avgRank = e.count ? (e.rankSum || 0) / e.count : 0;
   });
   return arr;
 }

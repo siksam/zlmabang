@@ -379,7 +379,7 @@ input[type="number"] { text-align: right; }
 .alarm-del:hover { background: #fdf3f1; }
 
 /* 합쳐진 순위표: 고정 폭 + 섹션/헤더 행 */
-.stats.fixed { table-layout: fixed; min-width: 630px; }
+.stats.fixed { table-layout: fixed; min-width: 542px; }
 .stats .secrow td {
   font-weight: 700; font-size: 14px; text-align: left; color: var(--ink);
   padding: 14px 8px 4px; border-bottom: none;

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=105" />
+  <link rel="stylesheet" href="styles.css?v=106" />
 </head>
 <body>
   <main class="wrap">
@@ -68,16 +68,16 @@
       <button class="btn btn-ghost" id="admin-logout">관리자 해제</button>
     </div>
     <p class="admin-note" id="admin-note">관리자만 입장하세요.</p>
-    <footer class="app-version">v1.0.5</footer>
+    <footer class="app-version">v1.0.6</footer>
   </main>
 
   <script type="module">
-    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=105';
-    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=105';
+    import { onActiveTournament, onGamesByTournament, computeStandings, computeTeamStandings, computeTeamInfo, fmtPoints, fmt1, fmt2, checkAdminPassword, normalizeAlarms, resolveSound, onSounds } from './store.js?v=106';
+    import { beep, playSound, speakAlarm, speakEnd, testSpeak, unlockAudioOnGesture } from './audio.js?v=106';
 
     const DEFAULT_TITLE = '대회 기록 입력 사이트';
     const TEAM_BG = ['#eef5ef','#fdeeec','#fbf4e6','#eceff7','#f2edf7','#eaf4f3','#f6f1ea','#edf6ee','#f7eef3','#eef3f7'];
-    const COLS = [44,76,56,46,60,56,56,36,36,36,36,48,44];
+    const COLS = [40,76,40,50,50,50,46,30,30,30,30,40,30];
     const COLGROUP = `<colgroup>${COLS.map(w => `<col style="width:${w}px">`).join('')}</colgroup>`;
 
     const titleEl = document.getElementById('title');
@@ -94,22 +94,22 @@
 
     function teamModeTable(teams, standings, info, colorMap) {
       const teamHead = `<tr class="hrow">
-        <th>순위</th><th class="tl" colspan="3">팀</th><th>승점</th><th>승점차</th><th>평균</th>
-        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th></th><th>국수</th></tr>`;
+        <th>순위</th><th class="tl" colspan="2">팀</th><th>승점</th><th>승점차</th><th>평균</th><th></th>
+        <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
       const teamRows = teams.map(e => `<tr style="background:${colorMap[e.team] || 'transparent'}">
-        ${rankCell(e.rank)}<td class="tl" colspan="3">${e.team}</td>
-        <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
-        ${placeCells(e)}<td></td><td>${e.count}</td></tr>`).join('');
+        ${rankCell(e.rank)}<td class="tl" colspan="2">${e.team}</td>
+        <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td><td></td>
+        ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`).join('');
       const indHead = `<tr class="hrow">
-        <th>순위</th><th class="tl">아이디</th><th class="tl">팀</th><th>팀내</th><th>승점</th><th>승점차</th><th>평균</th>
+        <th>순위</th><th class="tl">아이디</th><th class="tl">팀</th><th>승점</th><th>승점차</th><th>평균</th><th>팀내</th>
         <th class="c1">1</th><th>2</th><th>3</th><th class="c4">4</th><th>평순</th><th>국수</th></tr>`;
       const indRows = standings.map(e => {
         const ti = info[e.id];
         const bg = colorMap[ti ? ti.team : '(미지정)'] || 'transparent';
         return `<tr style="background:${bg}">
-          ${rankCell(e.rank)}<td class="tl">${e.id}</td>
-          <td class="tl">${ti ? ti.team : '(미지정)'}</td><td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>
+          ${rankCell(e.rank)}<td class="tl">${e.id}</td><td class="tl">${ti ? ti.team : '(미지정)'}</td>
           <td>${fmtPoints(e.points)}</td>${gapCell(e.gap)}<td>${fmtPoints(e.avgPoints)}</td>
+          <td>${ti ? ti.teamRank + '/' + ti.teamSize : '-'}</td>
           ${placeCells(e)}<td>${fmt2(e.avgRank)}</td><td>${e.count}</td></tr>`;
       }).join('');
       return `<div class="tscroll"><table class="stats fixed">${COLGROUP}<tbody>
